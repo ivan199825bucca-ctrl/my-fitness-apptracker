@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Fitness Pro - Grafici Avanzati</title>
+    <title>AI Fitness Pro - Grafici e Gestione</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -75,14 +75,14 @@
         <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
             <h2 class="text-lg font-bold text-blue-600 mb-4"><i class="fas fa-heartbeat mr-2"></i>Cardio</h2>
             <div class="grid grid-cols-2 gap-3 mb-4">
-                <button onclick="showCardioForm('walk')" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold border border-blue-100 hover:bg-blue-100">CAMMINATA</button>
-                <button onclick="showCardioForm('bike')" class="bg-indigo-50 text-indigo-600 py-3 rounded-xl font-bold border border-indigo-100 hover:bg-indigo-100">CYCLETTE</button>
+                <button onclick="showCardioForm('walk')" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold border border-blue-100 hover:bg-blue-100 text-xs">CAMMINATA</button>
+                <button onclick="showCardioForm('bike')" class="bg-indigo-50 text-indigo-600 py-3 rounded-xl font-bold border border-indigo-100 hover:bg-indigo-100 text-xs">CYCLETTE</button>
             </div>
             <div id="cardio-form" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div id="walk-inputs" class="hidden grid grid-cols-3 gap-2">
                     <input type="number" id="walk-kmh" placeholder="km/h" class="p-2 border rounded">
                     <input type="number" id="walk-min" placeholder="Min" class="p-2 border rounded">
-                    <input type="number" id="walk-grade" placeholder="Pend.%" class="p-2 border rounded">
+                    <input type="number" id="walk-grade" placeholder="P.%" class="p-2 border rounded">
                 </div>
                 <div id="bike-inputs" class="hidden grid grid-cols-3 gap-2">
                     <input type="number" id="bike-level" placeholder="Liv." class="p-2 border rounded">
@@ -94,7 +94,7 @@
         </section>
 
         <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
-            <h2 class="text-xs font-bold mb-4 text-slate-400 uppercase tracking-widest italic">Diario del <span id="display-date"></span></h2>
+            <h2 class="text-xs font-bold mb-4 text-slate-400 uppercase tracking-widest italic text-center">Diario del <span id="display-date"></span></h2>
             <div id="daily-log" class="space-y-3"></div>
         </section>
 
@@ -108,7 +108,7 @@
                 <div class="text-center"><label class="text-[10px] text-slate-400">REPS</label><input type="number" id="ex-reps" class="w-full p-2 bg-slate-100 rounded-lg text-center"></div>
                 <div class="text-center"><label class="text-[10px] text-slate-400">KG</label><input type="number" id="ex-weight" class="w-full p-2 bg-slate-100 rounded-lg text-center font-bold"></div>
             </div>
-            <button onclick="confirmWorkout()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">SALVA ESERCIZIO</button>
+            <button onclick="confirmWorkout()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">SALVA</button>
             <button onclick="document.getElementById('workout-form').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-xs">Annulla</button>
         </div>
     </div>
@@ -122,10 +122,9 @@
         const USER_WEIGHT = 71;
 
         let tokenClient, gapiInited, gisInited, fileId, myChart;
-        let history = JSON.parse(localStorage.getItem('fitness_pro_v9')) || { diet: [], gym: [], cardio: [] };
+        let history = JSON.parse(localStorage.getItem('fitness_pro_v10')) || { diet: [], gym: [], cardio: [] };
         let activeCardioType = '';
 
-        // Google Sync
         function gapiLoaded() { gapi.load('client', async () => { await gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] }); gapiInited = true; }); }
         function gisLoaded() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: '' }); gisInited = true; }
 
@@ -158,7 +157,6 @@
             });
         }
 
-        // Search Diet & Gym (OFF & Wger)
         async function searchOFF() {
             const q = document.getElementById('food-input').value;
             const res = document.getElementById('food-results');
@@ -174,7 +172,7 @@
                 div.onclick = () => {
                     const g = prompt("Grammi?", "100");
                     if(g) {
-                        history.diet.push({ date: new Date(document.getElementById('global-date').value).toLocaleDateString(), name: p.product_name, kcal: Math.round((kcal*g)/100), grams: g });
+                        history.diet.push({ id: Date.now(), date: new Date(document.getElementById('global-date').value).toLocaleDateString(), name: p.product_name, kcal: Math.round((kcal*g)/100), grams: g });
                         save();
                         res.classList.add('hidden');
                     }
@@ -205,12 +203,12 @@
             });
         }
 
-        // Calculations & Recording
         function confirmWorkout() {
             const name = document.getElementById('sel-ex-name').innerText;
             const sets = parseInt(document.getElementById('ex-sets').value) || 0;
             const kcalBurned = Math.round((6 * 3.5 * USER_WEIGHT / 200) * (sets * 3.75));
             history.gym.push({
+                id: Date.now(),
                 date: new Date(document.getElementById('global-date').value).toLocaleDateString(),
                 name, kcal: kcalBurned, sets, reps: document.getElementById('ex-reps').value, weight: document.getElementById('ex-weight').value
             });
@@ -240,19 +238,26 @@
                 name = "Cyclette"; detail = `Liv.${level}, ${min}min, ${rpm}RPM`;
             }
             if(!history.cardio) history.cardio = [];
-            history.cardio.push({ date, name, kcal, detail });
+            history.cardio.push({ id: Date.now(), date, name, kcal, detail });
             save();
             document.getElementById('cardio-form').classList.add('hidden');
         }
 
+        // --- FUNZIONE ELIMINA ---
+        function deleteItem(type, id) {
+            if(confirm("Vuoi eliminare questa voce?")) {
+                history[type] = history[type].filter(item => item.id !== id);
+                save();
+            }
+        }
+
         function save() {
-            localStorage.setItem('fitness_pro_v9', JSON.stringify(history));
+            localStorage.setItem('fitness_pro_v10', JSON.stringify(history));
             if (fileId) uploadToDrive();
             updateUI();
             updateChart();
         }
 
-        // UI & CHART
         function updateUI() {
             const selDate = new Date(document.getElementById('global-date').value).toLocaleDateString();
             document.getElementById('display-date').innerText = selDate;
@@ -265,15 +270,23 @@
             
             const logDiv = document.getElementById('daily-log');
             logDiv.innerHTML = "";
-            dDiet.forEach(d => logDiv.innerHTML += logItem('fa-utensils', 'text-green-500', d.name, `${d.grams}g`, `${d.kcal}kcal`));
-            dGym.forEach(g => logDiv.innerHTML += logItem('fa-dumbbell', 'text-red-500', g.name, `${g.sets}x${g.reps} @ ${g.weight}kg`, `-${g.kcal}kcal`));
-            dCardio.forEach(c => logDiv.innerHTML += logItem('fa-heartbeat', 'text-blue-500', c.name, c.detail, `-${c.kcal}kcal`));
+            dDiet.forEach(d => logDiv.innerHTML += logItem('diet', d.id, 'fa-utensils', 'text-green-500', d.name, `${d.grams}g`, `${d.kcal}kcal`));
+            dGym.forEach(g => logDiv.innerHTML += logItem('gym', g.id, 'fa-dumbbell', 'text-red-500', g.name, `${g.sets}x${g.reps} @ ${g.weight}kg`, `-${g.kcal}kcal`));
+            dCardio.forEach(c => logDiv.innerHTML += logItem('cardio', c.id, 'fa-heartbeat', 'text-blue-500', c.name, c.detail, `-${c.kcal}kcal`));
         }
 
-        function logItem(icon, color, title, sub, val) {
-            return `<div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center animate-fade-in">
-                <div class="flex items-center gap-3"><i class="fas ${icon} ${color} text-lg w-6"></i><div><p class="font-bold text-xs uppercase">${title}</p><p class="text-[10px] text-slate-400">${sub}</p></div></div>
-                <b class="text-xs ${val.startsWith('-') ? 'text-red-500' : 'text-green-600'} font-black">${val}</b>
+        function logItem(type, id, icon, color, title, sub, val) {
+            return `<div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center group">
+                <div class="flex items-center gap-3">
+                    <i class="fas ${icon} ${color} text-lg w-6"></i>
+                    <div><p class="font-bold text-xs uppercase">${title}</p><p class="text-[10px] text-slate-400">${sub}</p></div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <b class="text-xs ${val.startsWith('-') ? 'text-red-500' : 'text-green-600'} font-black">${val}</b>
+                    <button onclick="deleteItem('${type}', ${id})" class="text-slate-300 hover:text-red-500 transition-colors">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
             </div>`;
         }
 
@@ -282,47 +295,28 @@
             const ctx = document.getElementById('fitnessChart').getContext('2d');
             const labels = [];
             const dataNet = [];
-            
             for(let i = days - 1; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
+                const d = new Date(); d.setDate(d.getDate() - i);
                 const ds = d.toLocaleDateString();
                 labels.push(ds.substring(0, 5));
-                
                 const tIn = history.diet.filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0);
                 const tOut = (history.gym || []).filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0) + (history.cardio || []).filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0);
                 dataNet.push(Math.round(TDEE_TARGET - tIn + tOut));
             }
-
             if(myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Netto Calorie',
-                        data: dataNet,
-                        borderColor: '#6366f1',
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointRadius: 0
-                    }]
+                    datasets: [{ label: 'Netto Calorie', data: dataNet, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: false }, x: { grid: { display: false } } },
-                    plugins: { legend: { display: false } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
             });
         }
 
         window.onload = () => {
             document.getElementById('global-date').valueAsDate = new Date();
-            updateUI();
-            updateChart();
+            updateUI(); updateChart();
         };
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
