@@ -3,177 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fitness Tracker Pro - Ivan</title>
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
-    <style>
-        :root { --primary: #007bff; --bg: #f4f7f6; --card: #ffffff; --cardio: #28a745; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 800px; margin: auto; }
-        .card { background: var(--card); padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        h2 { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-top: 0; color: #2c3e50; }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; font-weight: bold; border: none; cursor: pointer; transition: 0.3s; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        .row { display: flex; gap: 10px; }
-        .btn-cardio { background: var(--cardio); }
-        .hidden { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { text-align: left; padding: 15px; border-bottom: 1px solid #eee; }
-        .kcal-badge { background: #e1f5fe; color: #01579b; padding: 5px 10px; border-radius: 20px; font-weight: bold; }
-    </style>
+    <title>AI Fitness Pro - Grafici Avanzati</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900 min-h-screen pb-24 font-sans text-sm">
 
-<div class="container">
-    <div class="card">
-        <h2>Ivan's Fitness Tracker 2026</h2>
-        <div id="auth-controls">
-            <button id="auth-btn">Accedi con Google (Sync Drive)</button>
+    <header class="bg-indigo-700 text-white p-4 sticky top-0 z-50 shadow-md">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold italic tracking-tighter uppercase">AI COACH PRO</h1>
+                <input type="date" id="global-date" onchange="updateUI()" class="bg-white/20 text-white text-[10px] border-none rounded px-2 py-1 outline-none mt-1">
+            </div>
+            <div class="text-right">
+                <p id="sync-status" class="text-[9px] uppercase opacity-60 mb-1">Offline</p>
+                <p id="net-display" class="font-bold text-xl leading-none">0</p>
+            </div>
         </div>
-        <p id="status" style="font-size: 0.9em; color: #666;">Stato: Sincronizzazione non attiva</p>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
+
+        <section class="bg-white rounded-2xl shadow-sm p-4 border border-indigo-100 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i class="fab fa-google text-lg"></i></div>
+                <div>
+                    <h3 class="font-bold text-xs uppercase">Cloud Sync</h3>
+                    <p id="user-info" class="text-[10px] text-slate-500">Dati salvati su Google Drive</p>
+                </div>
+            </div>
+            <button id="auth-btn" onclick="handleAuthClick()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm">Connetti Drive</button>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-indigo-700 uppercase italic">Andamento</h2>
+                <select id="chart-period" onchange="updateChart()" class="bg-slate-100 text-[10px] font-bold py-1 px-2 rounded-lg border-none outline-none">
+                    <option value="7">Settimanale</option>
+                    <option value="30">Mensile</option>
+                    <option value="90">Trimestrale</option>
+                    <option value="180">Semestrale</option>
+                    <option value="365">Annuale</option>
+                </select>
+            </div>
+            <div class="h-64 w-full">
+                <canvas id="fitnessChart"></canvas>
+            </div>
+        </section>
+
+        <div class="grid md:grid-cols-2 gap-4">
+            <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+                <h2 class="text-lg font-bold text-green-600 mb-4"><i class="fas fa-utensils mr-2"></i>Dieta</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="food-input" placeholder="Cerca cibo..." class="flex-1 p-3 bg-slate-50 rounded-xl border outline-none">
+                    <button onclick="searchOFF()" class="bg-green-500 text-white px-4 rounded-xl"><i class="fas fa-search"></i></button>
+                </div>
+                <div id="food-results" class="mt-2 hidden max-h-40 overflow-auto border rounded-xl p-2 bg-white"></div>
+            </section>
+
+            <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+                <h2 class="text-lg font-bold text-red-600 mb-4"><i class="fas fa-dumbbell mr-2"></i>Pesi</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="exercise-input" placeholder="Cerca esercizio..." class="flex-1 p-3 bg-slate-50 rounded-xl border outline-none">
+                    <button onclick="searchWger()" class="bg-red-500 text-white px-4 rounded-xl"><i class="fas fa-search"></i></button>
+                </div>
+                <div id="exercise-results" class="mt-2 hidden max-h-40 overflow-auto border rounded-xl p-2 bg-white"></div>
+            </section>
+        </div>
+
+        <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+            <h2 class="text-lg font-bold text-blue-600 mb-4"><i class="fas fa-heartbeat mr-2"></i>Cardio</h2>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button onclick="showCardioForm('walk')" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold border border-blue-100 hover:bg-blue-100">CAMMINATA</button>
+                <button onclick="showCardioForm('bike')" class="bg-indigo-50 text-indigo-600 py-3 rounded-xl font-bold border border-indigo-100 hover:bg-indigo-100">CYCLETTE</button>
+            </div>
+            <div id="cardio-form" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div id="walk-inputs" class="hidden grid grid-cols-3 gap-2">
+                    <input type="number" id="walk-kmh" placeholder="km/h" class="p-2 border rounded">
+                    <input type="number" id="walk-min" placeholder="Min" class="p-2 border rounded">
+                    <input type="number" id="walk-grade" placeholder="Pend.%" class="p-2 border rounded">
+                </div>
+                <div id="bike-inputs" class="hidden grid grid-cols-3 gap-2">
+                    <input type="number" id="bike-level" placeholder="Liv." class="p-2 border rounded">
+                    <input type="number" id="bike-min" placeholder="Min" class="p-2 border rounded">
+                    <input type="number" id="bike-rpm" placeholder="RPM" class="p-2 border rounded">
+                </div>
+                <button onclick="confirmCardio()" class="w-full mt-3 bg-blue-600 text-white py-2 rounded-xl font-bold">REGISTRA</button>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+            <h2 class="text-xs font-bold mb-4 text-slate-400 uppercase tracking-widest italic">Diario del <span id="display-date"></span></h2>
+            <div id="daily-log" class="space-y-3"></div>
+        </section>
+
+    </main>
+
+    <div id="workout-form" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-[100]">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm">
+            <p id="sel-ex-name" class="font-bold mb-4 uppercase text-indigo-700 text-center border-b pb-2"></p>
+            <div class="grid grid-cols-3 gap-3 mb-5">
+                <div class="text-center"><label class="text-[10px] text-slate-400">SERIE</label><input type="number" id="ex-sets" class="w-full p-2 bg-slate-100 rounded-lg text-center"></div>
+                <div class="text-center"><label class="text-[10px] text-slate-400">REPS</label><input type="number" id="ex-reps" class="w-full p-2 bg-slate-100 rounded-lg text-center"></div>
+                <div class="text-center"><label class="text-[10px] text-slate-400">KG</label><input type="number" id="ex-weight" class="w-full p-2 bg-slate-100 rounded-lg text-center font-bold"></div>
+            </div>
+            <button onclick="confirmWorkout()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">SALVA ESERCIZIO</button>
+            <button onclick="document.getElementById('workout-form').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-xs">Annulla</button>
+        </div>
     </div>
 
-    <div class="card">
-        <h2>Allenamento Pesi</h2>
-        <input type="text" id="ex-name" placeholder="Esercizio (es: Incline Bench Press)">
-        <div class="row">
-            <input type="number" id="ex-sets" placeholder="Serie">
-            <input type="number" id="ex-reps" placeholder="Reps">
-            <input type="number" id="ex-weight" placeholder="Kg (per lato/tot)">
-        </div>
-        <p style="font-size: 0.8em; color: #888;">*Recupero calcolato: 3 minuti</p>
-        <button onclick="addWeights()">Aggiungi Sessione Pesi</button>
-    </div>
+    <script>
+        const CLIENT_ID = '836723079936-2gldmnoklai4m24dusecotskv9kra13m.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyCPLarXCu7hXHam45n92xsau7h95GkVq7o';
+        const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
+        const SCOPES = "https://www.googleapis.com/auth/drive.file";
+        const TDEE_TARGET = 2747.6;
+        const USER_WEIGHT = 71;
 
-    <div class="card">
-        <h2>Sezione Cardio</h2>
-        <div class="row">
-            <button class="btn-cardio" onclick="toggleCardio('walk')">Camminata</button>
-            <button class="btn-cardio" onclick="toggleCardio('bike')">Cyclette</button>
-        </div>
+        let tokenClient, gapiInited, gisInited, fileId, myChart;
+        let history = JSON.parse(localStorage.getItem('fitness_pro_v9')) || { diet: [], gym: [], cardio: [] };
+        let activeCardioType = '';
 
-        <div id="form-walk" class="hidden">
-            <h3>Camminata (Tapis Roulant)</h3>
-            <input type="number" id="walk-kmh" placeholder="Velocità (km/h)">
-            <input type="number" id="walk-min" placeholder="Durata (minuti)">
-            <input type="number" id="walk-grade" placeholder="% Pendenza">
-            <button class="btn-cardio" onclick="addCardio('walk')">Salva Camminata</button>
-        </div>
+        // Google Sync
+        function gapiLoaded() { gapi.load('client', async () => { await gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] }); gapiInited = true; }); }
+        function gisLoaded() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: '' }); gisInited = true; }
 
-        <div id="form-bike" class="hidden">
-            <h3>Cyclette</h3>
-            <input type="number" id="bike-level" placeholder="Livello (Resistenza)">
-            <input type="number" id="bike-min" placeholder="Durata (minuti)">
-            <input type="number" id="bike-rpm" placeholder="RPM (Giri al minuto)">
-            <button class="btn-cardio" onclick="addCardio('bike')">Salva Cyclette</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>Log Attività Odierna</h2>
-        <table id="log-table">
-            <thead>
-                <tr>
-                    <th>Attività</th>
-                    <th>Dati</th>
-                    <th>Consumo</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</div>
-
-<script>
-    // --- CONFIGURAZIONE GOOGLE DRIVE ---
-    const CLIENT_ID = 'INSERISCI_QUI_IL_TUO_CLIENT_ID'; 
-    const API_KEY = 'INSERISCI_QUI_LA_TUA_API_KEY';
-    const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
-    const SCOPES = "https://www.googleapis.com/auth/drive.file";
-
-    const USER_WEIGHT = 71; // Il tuo peso (kg)
-
-    function toggleCardio(type) {
-        document.getElementById('form-walk').classList.add('hidden');
-        document.getElementById('form-bike').classList.add('hidden');
-        document.getElementById('form-' + type).classList.remove('hidden');
-    }
-
-    // --- CALCOLO REALISTICO PESI ---
-    function addWeights() {
-        const name = document.getElementById('ex-name').value;
-        const sets = parseInt(document.getElementById('ex-sets').value);
-        const reps = document.getElementById('ex-reps').value;
-        const weight = document.getElementById('ex-weight').value;
-
-        if(!name || !sets) return;
-
-        // Tempo per serie: 3 min (recupero) + 45 sec (esecuzione) = ~3.75 min totali
-        const totalMinutes = sets * 3.75;
-        const met = 6.0; // Valore standard bodybuilding intenso
-        const kcal = Math.round((met * 3.5 * USER_WEIGHT / 200) * totalMinutes);
-
-        updateLog(name, `${sets}x${reps} @ ${weight}kg`, kcal);
-    }
-
-    // --- CALCOLO CARDIO AVANZATO ---
-    function addCardio(type) {
-        let kcal = 0;
-        let detail = "";
-        let name = "";
-
-        if(type === 'walk') {
-            const speed = parseFloat(document.getElementById('walk-kmh').value);
-            const min = parseFloat(document.getElementById('walk-min').value);
-            const grade = parseFloat(document.getElementById('walk-grade').value) || 0;
-            
-            // Formula ACSM per Camminata: VO2 = (0.1 * speed) + (1.8 * speed * grade/100) + 3.5
-            // Conversione km/h in metri/minuto
-            const mMin = (speed * 1000) / 60;
-            const vo2 = (0.1 * mMin) + (1.8 * mMin * (grade/100)) + 3.5;
-            kcal = Math.round((vo2 * USER_WEIGHT / 200) * min);
-            
-            name = "Camminata";
-            detail = `${speed} km/h, ${min} min, ${grade}% pend.`;
-        } 
-        else if(type === 'bike') {
-            const level = parseInt(document.getElementById('bike-level').value);
-            const min = parseInt(document.getElementById('bike-min').value);
-            const rpm = parseInt(document.getElementById('bike-rpm').value);
-
-            // Stima MET dinamica: base 5.0 + incremento per livello e velocità
-            let met = 5.0 + (level * 0.3) + (rpm / 30);
-            kcal = Math.round((met * 3.5 * USER_WEIGHT / 200) * min);
-            
-            name = "Cyclette";
-            detail = `Liv. ${level}, ${min} min, ${rpm} RPM`;
+        async function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                document.getElementById('sync-status').innerText = "Online (Sync)";
+                await findOrCreateFile();
+            };
+            tokenClient.requestAccessToken({prompt: 'consent'});
         }
 
-        updateLog(name, detail, kcal);
-    }
+        async function findOrCreateFile() {
+            const resp = await gapi.client.drive.files.list({ q: "name = 'fitness_pro_data.json'", fields: 'files(id, name)' });
+            if (resp.result.files.length > 0) {
+                fileId = resp.result.files[0].id;
+                const fileData = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
+                history = fileData.result;
+                save();
+            } else { await uploadToDrive(); }
+        }
 
-    function updateLog(name, detail, kcal) {
-        const table = document.getElementById('log-table').querySelector('tbody');
-        const row = table.insertRow(0);
-        row.innerHTML = `
-            <td><strong>${name}</strong></td>
-            <td>${detail}</td>
-            <td><span class="kcal-badge">${kcal} kcal</span></td>
-        `;
-        saveToCloud(); // Funzione per inviare a Drive se connesso
-    }
+        async function uploadToDrive() {
+            if (!fileId) {
+                const resp = await gapi.client.drive.files.create({ resource: { name: 'fitness_pro_data.json', mimeType: 'application/json' }, fields: 'id' });
+                fileId = resp.result.id;
+            }
+            await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+                method: 'PATCH', headers: { 'Authorization': 'Bearer ' + gapi.client.getToken().access_token },
+                body: JSON.stringify(history)
+            });
+        }
 
-    function saveToCloud() {
-        // Qui andrà la logica per salvare il JSON su Google Drive
-        console.log("Salvataggio in corso...");
-    }
+        // Search Diet & Gym (OFF & Wger)
+        async function searchOFF() {
+            const q = document.getElementById('food-input').value;
+            const res = document.getElementById('food-results');
+            if(q.length < 3) return;
+            res.innerHTML = "Cercando..."; res.classList.remove('hidden');
+            const response = await fetch(`https://it.openfoodfacts.org/cgi/search.pl?search_terms=${q}&json=1&page_size=5`);
+            const data = await response.json();
+            res.innerHTML = "";
+            data.products.forEach(p => {
+                const kcal = p.nutriments['energy-kcal_100g'] || 0;
+                const div = document.createElement('div');
+                div.className = "p-2 border-b last:border-0 flex justify-between cursor-pointer hover:bg-green-50 text-[11px]";
+                div.onclick = () => {
+                    const g = prompt("Grammi?", "100");
+                    if(g) {
+                        history.diet.push({ date: new Date(document.getElementById('global-date').value).toLocaleDateString(), name: p.product_name, kcal: Math.round((kcal*g)/100), grams: g });
+                        save();
+                        res.classList.add('hidden');
+                    }
+                };
+                div.innerHTML = `<span>${p.product_name}</span><b>${kcal} kcal</b>`;
+                res.appendChild(div);
+            });
+        }
 
-    // Logica Inizializzazione Google Auth (da completare con i tuoi dati Cloud)
-    document.getElementById('auth-btn').onclick = () => {
-        alert("Configura il tuo Client ID per attivare la sincronizzazione!");
-    };
-</script>
+        async function searchWger() {
+            const q = document.getElementById('exercise-input').value;
+            const res = document.getElementById('exercise-results');
+            if(q.length < 3) return;
+            res.innerHTML = "Cercando..."; res.classList.remove('hidden');
+            const response = await fetch(`https://wger.de/api/v2/exercise/search/?term=${q}`);
+            const data = await response.json();
+            res.innerHTML = "";
+            data.suggestions.forEach(s => {
+                const div = document.createElement('div');
+                div.className = "p-2 border-b last:border-0 text-[11px] cursor-pointer hover:bg-red-50";
+                div.onclick = () => {
+                    document.getElementById('sel-ex-name').innerText = s.value;
+                    document.getElementById('workout-form').classList.remove('hidden');
+                    res.classList.add('hidden');
+                };
+                div.innerText = s.value;
+                res.appendChild(div);
+            });
+        }
 
+        // Calculations & Recording
+        function confirmWorkout() {
+            const name = document.getElementById('sel-ex-name').innerText;
+            const sets = parseInt(document.getElementById('ex-sets').value) || 0;
+            const kcalBurned = Math.round((6 * 3.5 * USER_WEIGHT / 200) * (sets * 3.75));
+            history.gym.push({
+                date: new Date(document.getElementById('global-date').value).toLocaleDateString(),
+                name, kcal: kcalBurned, sets, reps: document.getElementById('ex-reps').value, weight: document.getElementById('ex-weight').value
+            });
+            save();
+            document.getElementById('workout-form').classList.add('hidden');
+        }
+
+        function showCardioForm(type) {
+            activeCardioType = type;
+            document.getElementById('cardio-form').classList.remove('hidden');
+            document.getElementById('walk-inputs').classList.toggle('hidden', type !== 'walk');
+            document.getElementById('bike-inputs').classList.toggle('hidden', type !== 'bike');
+        }
+
+        function confirmCardio() {
+            let kcal = 0, detail = "", name = "";
+            const date = new Date(document.getElementById('global-date').value).toLocaleDateString();
+            if(activeCardioType === 'walk') {
+                const speed = parseFloat(document.getElementById('walk-kmh').value), min = parseFloat(document.getElementById('walk-min').value), grade = (parseFloat(document.getElementById('walk-grade').value)||0)/100;
+                const vo2 = (0.1 * ((speed*1000)/60)) + (1.8 * ((speed*1000)/60) * grade) + 3.5;
+                kcal = Math.round((vo2 * USER_WEIGHT / 200) * min);
+                name = "Camminata"; detail = `${speed}km/h, ${min}min, ${grade*100}% p.`;
+            } else {
+                const level = parseInt(document.getElementById('bike-level').value), min = parseInt(document.getElementById('bike-min').value), rpm = parseInt(document.getElementById('bike-rpm').value);
+                let met = 5.0 + (level * 0.3) + (rpm / 30);
+                kcal = Math.round((met * 3.5 * USER_WEIGHT / 200) * min);
+                name = "Cyclette"; detail = `Liv.${level}, ${min}min, ${rpm}RPM`;
+            }
+            if(!history.cardio) history.cardio = [];
+            history.cardio.push({ date, name, kcal, detail });
+            save();
+            document.getElementById('cardio-form').classList.add('hidden');
+        }
+
+        function save() {
+            localStorage.setItem('fitness_pro_v9', JSON.stringify(history));
+            if (fileId) uploadToDrive();
+            updateUI();
+            updateChart();
+        }
+
+        // UI & CHART
+        function updateUI() {
+            const selDate = new Date(document.getElementById('global-date').value).toLocaleDateString();
+            document.getElementById('display-date').innerText = selDate;
+            const dDiet = history.diet.filter(d => d.date === selDate);
+            const dGym = (history.gym || []).filter(g => g.date === selDate);
+            const dCardio = (history.cardio || []).filter(c => c.date === selDate);
+            const tIn = dDiet.reduce((a,b)=>a+b.kcal, 0);
+            const tOut = dGym.reduce((a,b)=>a+b.kcal, 0) + dCardio.reduce((a,b)=>a+b.kcal, 0);
+            document.getElementById('net-display').innerText = Math.round(TDEE_TARGET - tIn + tOut);
+            
+            const logDiv = document.getElementById('daily-log');
+            logDiv.innerHTML = "";
+            dDiet.forEach(d => logDiv.innerHTML += logItem('fa-utensils', 'text-green-500', d.name, `${d.grams}g`, `${d.kcal}kcal`));
+            dGym.forEach(g => logDiv.innerHTML += logItem('fa-dumbbell', 'text-red-500', g.name, `${g.sets}x${g.reps} @ ${g.weight}kg`, `-${g.kcal}kcal`));
+            dCardio.forEach(c => logDiv.innerHTML += logItem('fa-heartbeat', 'text-blue-500', c.name, c.detail, `-${c.kcal}kcal`));
+        }
+
+        function logItem(icon, color, title, sub, val) {
+            return `<div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center animate-fade-in">
+                <div class="flex items-center gap-3"><i class="fas ${icon} ${color} text-lg w-6"></i><div><p class="font-bold text-xs uppercase">${title}</p><p class="text-[10px] text-slate-400">${sub}</p></div></div>
+                <b class="text-xs ${val.startsWith('-') ? 'text-red-500' : 'text-green-600'} font-black">${val}</b>
+            </div>`;
+        }
+
+        function updateChart() {
+            const days = parseInt(document.getElementById('chart-period').value);
+            const ctx = document.getElementById('fitnessChart').getContext('2d');
+            const labels = [];
+            const dataNet = [];
+            
+            for(let i = days - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const ds = d.toLocaleDateString();
+                labels.push(ds.substring(0, 5));
+                
+                const tIn = history.diet.filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0);
+                const tOut = (history.gym || []).filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0) + (history.cardio || []).filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0);
+                dataNet.push(Math.round(TDEE_TARGET - tIn + tOut));
+            }
+
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Netto Calorie',
+                        data: dataNet,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: false }, x: { grid: { display: false } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        window.onload = () => {
+            document.getElementById('global-date').valueAsDate = new Date();
+            updateUI();
+            updateChart();
+        };
+    </script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>
 </html>
