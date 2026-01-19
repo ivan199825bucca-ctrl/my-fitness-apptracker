@@ -34,7 +34,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div>
                     <label class="text-[9px] uppercase font-bold text-slate-400">Peso (kg)</label>
-                    <input type="number" id="user-weight" value="71.1" step="0.1" oninput="updateUI()" class="w-full p-2 bg-slate-50 border rounded-lg outline-none focus:border-indigo-400 font-bold">
+                    <input type="number" id="user-weight" value="71" step="0.1" oninput="updateUI()" class="w-full p-2 bg-slate-50 border rounded-lg outline-none focus:border-indigo-400 font-bold">
                 </div>
                 <div>
                     <label class="text-[9px] uppercase font-bold text-slate-400">BMR (Fisso)</label>
@@ -131,7 +131,6 @@
                 <button onclick="handleLogout()" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[10px] font-bold uppercase">Esci</button>
             </div>
         </section>
-
     </main>
 
     <div id="workout-form" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-[100]">
@@ -155,48 +154,44 @@
         let history = JSON.parse(localStorage.getItem('fitness_pro_v11')) || { diet: [], gym: [], cardio: [] };
         let myChart, activeCardioType = '';
 
-        // --- LOGICA CALCOLO RICHIESTA ---
-        // Calcolo: Residue = (BMR + NEAT) - CIBO + TEA
+        // --- INTEGRAZIONE LOGICA RICHIESTA ---
         function updateUI() {
             const sel = getSelectedDate();
-            const weight = parseFloat(document.getElementById('user-weight').value) || 71.1;
+            // Valori manuali
             const bmr = parseFloat(document.getElementById('user-bmr').value) || 1831.7;
             const neat = parseFloat(document.getElementById('user-neat').value) || 915.9;
+            const weight = parseFloat(document.getElementById('user-weight').value) || 71;
 
             document.getElementById('display-date').innerText = sel;
             
-            // Filtro i dati del giorno
             const dDiet = history.diet.filter(d => d.date === sel);
             const dGym = (history.gym || []).filter(g => g.date === sel);
             const dCardio = (history.cardio || []).filter(c => c.date === sel);
             
-            // Somma Calorie
             const kcalIn = dDiet.reduce((a,b) => a + b.kcal, 0);
             const tea = dGym.reduce((a,b) => a + b.kcal, 0) + dCardio.reduce((a,b) => a + b.kcal, 0);
             
-            // Update TEA Display
             document.getElementById('display-tea').innerText = tea.toFixed(0);
 
-            // Calcolo TDEE Dinamico
+            // TDEE = BMR + NEAT + TEA
             const tdeeTotal = bmr + neat + tea;
             document.getElementById('display-tdee-total').innerText = tdeeTotal.toFixed(1);
 
-            // CALCOLO RESIDUE: (BMR + NEAT) - CIBO + TEA
-            // Nota: TEA è positivo perché sono calorie "guadagnate" per il budget
-            const netResidue = Math.round((bmr + neat) - kcalIn + tea);
+            // CALCOLO RICHIESTO: Residue = TDEE - BMR - NEAT + TEA 
+            // Ma in base alla tua spiegazione "Kcal residue = TDEE - kcal mangiate"
+            // Se TDEE è dinamico (BMR + NEAT + TEA), allora Residue = (BMR + NEAT + TEA) - Cibo
+            const netResidue = Math.round(tdeeTotal - kcalIn);
             
             const netDisplay = document.getElementById('net-display');
             const netContainer = document.getElementById('net-container');
             netDisplay.innerText = netResidue;
 
-            // Feedback Visuale
             if (netResidue < 0) {
                 netContainer.className = "bg-red-500 text-white px-3 py-1 rounded-lg transition-colors";
             } else {
                 netContainer.className = "bg-green-500 text-white px-3 py-1 rounded-lg transition-colors";
             }
 
-            // Render Log
             const logDiv = document.getElementById('daily-log');
             logDiv.innerHTML = "";
             dDiet.forEach(d => logDiv.innerHTML += logItem('diet', d.id, 'fa-utensils', 'text-green-500', d.name, `${d.grams}g`, `${d.kcal}kcal`));
@@ -204,7 +199,6 @@
             dCardio.forEach(c => logDiv.innerHTML += logItem('cardio', c.id, 'fa-heartbeat', 'text-blue-500', c.name, c.detail, `+${c.kcal}kcal`));
         }
 
-        // Helper Parametri
         function getSelectedDate() { return new Date(document.getElementById('global-date').value).toLocaleDateString(); }
 
         function saveUserParams() {
@@ -227,7 +221,6 @@
             }
         }
 
-        // --- CORE FUNCTIONS (SAVE, DELETE, CHART) ---
         function save(cloud = true) {
             localStorage.setItem('fitness_pro_v11', JSON.stringify(history));
             if(cloud) syncToCloud();
@@ -255,7 +248,7 @@
             </div>`;
         }
 
-        // --- API INTEGRATIONS (FOOD & GYM) ---
+        // --- API INTEGRATIONS ---
         async function searchOFF() {
             const q = document.getElementById('food-input').value;
             const res = document.getElementById('food-results');
@@ -312,7 +305,6 @@
             document.getElementById('workout-form').classList.add('hidden');
         }
 
-        // --- CARDIO LOGIC ---
         function showCardioForm(type) {
             activeCardioType = type;
             document.getElementById('cardio-form').classList.remove('hidden');
@@ -339,7 +331,6 @@
             document.getElementById('cardio-form').classList.add('hidden');
         }
 
-        // --- CLOUD SYNC ---
         async function syncToCloud() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user) return;
@@ -347,7 +338,7 @@
                 "ID utente": user.id, 
                 macro_json: JSON.stringify(history), 
                 peso: parseFloat(document.getElementById('user-weight').value),
-                tdee: parseFloat(document.getElementById('user-bmr').value) // Usiamo bmr qui come riferimento
+                tdee: parseFloat(document.getElementById('user-bmr').value)
             });
             if (!error) document.getElementById('sync-status').innerText = "Cloud OK ✓";
         }
@@ -364,7 +355,6 @@
             location.reload();
         }
 
-        // --- CHART ---
         function updateChart() {
             const days = parseInt(document.getElementById('chart-period').value);
             const bmr = parseFloat(document.getElementById('user-bmr').value);
@@ -378,7 +368,8 @@
                 labels.push(ds.substring(0, 5));
                 const kcalIn = history.diet.filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0);
                 const tea = (history.gym || []).filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0) + (history.cardio || []).filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0);
-                dataResidue.push(Math.round((bmr + neat) - kcalIn + tea));
+                // Grafico segue la stessa logica del display
+                dataResidue.push(Math.round((bmr + neat + tea) - kcalIn));
             }
             
             if(myChart) myChart.destroy();
