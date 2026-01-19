@@ -3,13 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI COACH PRO - Fixed TDEE</title>
+    <title>AI COACH PRO - Integrated Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .circle-container { position: relative; width: 160px; height: 160px; }
+        svg { transform: rotate(-90deg); }
+        circle { fill: none; stroke-width: 10; stroke-linecap: round; }
+        .bg-circle { stroke: #f1f5f9; }
+        .progress-circle { 
+            stroke: #10b981; 
+            stroke-dasharray: 440; 
+            stroke-dashoffset: 440; 
+            transition: stroke-dashoffset 0.8s ease; 
+        }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen pb-24 font-sans text-sm">
+<body class="bg-slate-50 text-slate-900 min-h-screen pb-24 text-sm">
 
     <header class="bg-indigo-700 text-white p-4 sticky top-0 z-50 shadow-md">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
@@ -20,7 +34,7 @@
             <div class="text-right">
                 <p id="sync-status" class="text-[9px] uppercase opacity-60 mb-1">Cloud Offline</p>
                 <div id="net-container" class="bg-white/10 px-3 py-1 rounded-lg">
-                    <p id="net-display" class="font-bold text-xl leading-none">0</p>
+                    <p id="net-display-header" class="font-bold text-xl leading-none">0</p>
                     <p class="text-[8px] uppercase font-medium">Kcal Residue</p>
                 </div>
             </div>
@@ -29,23 +43,75 @@
 
     <main class="max-w-4xl mx-auto p-4 space-y-6">
 
-        <section class="bg-white rounded-2xl shadow-sm p-5 border border-indigo-200">
-            <h2 class="text-xs font-bold mb-4 text-indigo-600 uppercase tracking-widest text-center"><i class="fas fa-cog mr-2"></i>Parametri Metabolici (Fissi)</h2>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                <div>
-                    <label class="text-[9px] uppercase font-bold text-slate-400">TDEE (Obiettivo)</label>
-                    <input type="number" id="user-tdee" value="2747.6" step="0.1" oninput="updateUI()" class="w-full p-2 bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 rounded-lg outline-none focus:border-indigo-400">
+        <section class="bg-white rounded-3xl shadow-xl p-6 border border-slate-100">
+            <div class="flex flex-col md:flex-row justify-around items-center gap-6 mb-8">
+                <div class="text-center">
+                    <p id="kcal-eaten" class="text-3xl font-black leading-none text-slate-800">0</p>
+                    <p class="text-slate-400 font-bold text-xs uppercase mt-2 tracking-wide">Mangiate</p>
                 </div>
-                <div>
-                    <label class="text-[9px] uppercase font-bold text-slate-400">BMR (Riposo)</label>
-                    <input type="number" id="user-bmr" value="1831.7" step="0.1" oninput="updateUI()" class="w-full p-2 bg-orange-50 text-orange-600 font-bold border border-orange-100 rounded-lg outline-none">
+
+                <div class="circle-container flex items-center justify-center">
+                    <svg width="160" height="160">
+                        <circle class="bg-circle" cx="80" cy="80" r="70"></circle>
+                        <circle id="ring-progress" class="progress-circle" cx="80" cy="80" r="70"></circle>
+                    </svg>
+                    <div class="absolute text-center">
+                        <p id="net-display" class="text-4xl font-black leading-none text-slate-900">0</p>
+                        <p class="text-slate-400 font-bold text-[10px] uppercase">Rimanenti</p>
+                    </div>
                 </div>
-                <div class="col-span-2 md:col-span-1">
-                    <label class="text-[9px] uppercase font-bold text-slate-400 italic">Consumo Extra (TEA)</label>
-                    <div id="display-tea" class="w-full p-2 bg-red-50 text-red-600 font-bold rounded-lg border border-red-100 text-center">0</div>
+
+                <div class="text-center">
+                    <p id="display-tea" class="text-3xl font-black leading-none text-indigo-600">0</p>
+                    <p class="text-slate-400 font-bold text-xs uppercase mt-2 tracking-wide">Bruciate (TEA)</p>
                 </div>
             </div>
-            <p class="text-[10px] text-slate-400 italic mb-4 text-center">Modifica i valori sopra per aggiornare il calcolo del deficit in tempo reale.</p>
+
+            <div class="grid grid-cols-3 gap-4 border-t pt-6">
+                <div class="space-y-2">
+                    <p class="text-slate-500 font-bold text-center text-[10px] uppercase">Carboidrati</p>
+                    <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div id="bar-carbs" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p class="text-[10px] font-black text-center"><span id="val-carbs">0</span> / <span id="target-carbs-display">207</span>g</p>
+                </div>
+                <div class="space-y-2">
+                    <p class="text-slate-500 font-bold text-center text-[10px] uppercase">Proteine</p>
+                    <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div id="bar-pro" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p class="text-[10px] font-black text-center"><span id="val-pro">0</span> / <span id="target-pro-display">115</span>g</p>
+                </div>
+                <div class="space-y-2">
+                    <p class="text-slate-500 font-bold text-center text-[10px] uppercase">Grassi</p>
+                    <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div id="bar-fat" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p class="text-[10px] font-black text-center"><span id="val-fat">0</span> / <span id="target-fat-display">61</span>g</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm p-5 border border-indigo-100">
+            <h2 class="text-xs font-bold mb-4 text-indigo-600 uppercase tracking-widest text-center"><i class="fas fa-cog mr-2"></i>Impostazioni Target (Manuali)</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div>
+                    <label class="text-[9px] uppercase font-bold text-slate-400">TDEE Fisso</label>
+                    <input type="number" id="user-tdee" value="2747.6" step="0.1" oninput="updateUI()" class="w-full p-2 bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 rounded-lg outline-none">
+                </div>
+                <div>
+                    <label class="text-[9px] uppercase font-bold text-slate-400">Target C (g)</label>
+                    <input type="number" id="target-carbs" value="207" oninput="updateUI()" class="w-full p-2 bg-slate-50 border rounded-lg outline-none">
+                </div>
+                <div>
+                    <label class="text-[9px] uppercase font-bold text-slate-400">Target P (g)</label>
+                    <input type="number" id="target-pro" value="115" oninput="updateUI()" class="w-full p-2 bg-slate-50 border rounded-lg outline-none">
+                </div>
+                <div>
+                    <label class="text-[9px] uppercase font-bold text-slate-400">Target G (g)</label>
+                    <input type="number" id="target-fat" value="61" oninput="updateUI()" class="w-full p-2 bg-slate-50 border rounded-lg outline-none">
+                </div>
+            </div>
             <button onclick="saveUserParams()" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold uppercase hover:bg-indigo-700 transition shadow-md">Salva Parametri & Cloud</button>
         </section>
 
@@ -82,13 +148,13 @@
             </section>
         </div>
 
-        <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
-            <h2 class="text-xs font-bold text-blue-600 mb-4 uppercase text-center tracking-widest">Sessione Cardio</h2>
+        <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200 text-center">
+            <h2 class="text-xs font-bold text-blue-600 mb-4 uppercase tracking-widest text-center">Sessione Cardio</h2>
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <button onclick="showCardioForm('walk')" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold border border-blue-100 text-xs uppercase">Camminata</button>
                 <button onclick="showCardioForm('bike')" class="bg-indigo-50 text-indigo-600 py-3 rounded-xl font-bold border border-indigo-100 text-xs uppercase">Cyclette</button>
             </div>
-            <div id="cardio-form" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div id="cardio-form" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
                 <div id="walk-inputs" class="hidden grid grid-cols-3 gap-2">
                     <input type="number" id="walk-kmh" placeholder="km/h" class="p-2 border rounded text-xs">
                     <input type="number" id="walk-min" placeholder="Min" class="p-2 border rounded text-xs">
@@ -108,22 +174,6 @@
             <div id="daily-log" class="space-y-3"></div>
         </section>
 
-        <section class="bg-white rounded-2xl shadow-sm p-4 border border-indigo-100">
-            <div id="auth-controls">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                    <input type="email" id="supa-email" placeholder="Email" class="p-2 border rounded-xl text-xs outline-none">
-                    <input type="password" id="supa-pass" placeholder="Password" class="p-2 border rounded-xl text-xs outline-none">
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="handleLogin()" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold">ACCEDI</button>
-                    <button onclick="handleSignup()" class="flex-1 bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold">REGISTRATI</button>
-                </div>
-            </div>
-            <div id="logged-controls" class="hidden flex justify-between items-center">
-                <p class="text-xs font-medium text-indigo-600"><span id="display-email"></span></p>
-                <button onclick="handleLogout()" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[10px] font-bold uppercase">Esci</button>
-            </div>
-        </section>
     </main>
 
     <div id="workout-form" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-[100]">
@@ -135,7 +185,7 @@
                 <div class="text-center"><label class="text-[10px] text-slate-400 uppercase">Kg</label><input type="number" id="ex-weight" class="w-full p-2 bg-slate-100 rounded-lg text-center font-bold"></div>
             </div>
             <button onclick="confirmWorkout()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">SALVA</button>
-            <button onclick="document.getElementById('workout-form').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-xs font-bold uppercase">Annulla</button>
+            <button onclick="document.getElementById('workout-form').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-xs font-bold uppercase text-center">Annulla</button>
         </div>
     </div>
 
@@ -144,15 +194,21 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjdm14ZWh2cHluZGVkZWFyc2NzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3Njk5NDYsImV4cCI6MjA4NDM0NTk0Nn0.L2i2AB73GSWn-t0zWUk_o0XDfKLXXTtlIRUHFyxS21c';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let history = JSON.parse(localStorage.getItem('fitness_pro_v11')) || { diet: [], gym: [], cardio: [] };
+        let history = JSON.parse(localStorage.getItem('fitness_pro_v12')) || { diet: [], gym: [], cardio: [] };
         let myChart, activeCardioType = '';
 
-        // --- CALCOLO CORE (METODO TDEE FISSO) ---
         function updateUI() {
             const sel = getSelectedDate();
-            // Valori fissi presi dagli input
             const tdee = parseFloat(document.getElementById('user-tdee').value) || 2747.6;
-            const bmr = parseFloat(document.getElementById('user-bmr').value) || 1831.7;
+            
+            // Target Macro
+            const tC = parseFloat(document.getElementById('target-carbs').value);
+            const tP = parseFloat(document.getElementById('target-pro').value);
+            const tG = parseFloat(document.getElementById('target-fat').value);
+            
+            document.getElementById('target-carbs-display').innerText = tC;
+            document.getElementById('target-pro-display').innerText = tP;
+            document.getElementById('target-fat-display').innerText = tG;
 
             document.getElementById('display-date').innerText = sel;
             
@@ -161,29 +217,46 @@
             const dCardio = (history.cardio || []).filter(c => c.date === sel);
             
             const kcalIn = dDiet.reduce((a,b) => a + b.kcal, 0);
+            const carbsIn = dDiet.reduce((a,b) => a + (b.carbs || 0), 0);
+            const proIn = dDiet.reduce((a,b) => a + (b.pro || 0), 0);
+            const fatIn = dDiet.reduce((a,b) => a + (b.fat || 0), 0);
+            
             const tea = dGym.reduce((a,b) => a + b.kcal, 0) + dCardio.reduce((a,b) => a + b.kcal, 0);
             
-            document.getElementById('display-tea').innerText = tea.toFixed(0);
-
-            // LOGICA: Residue = TDEE FISSO - KCAL MANGIATE
-            // (Il TDEE è già comprensivo del tuo stile di vita standard)
-            const netResidue = Math.round(tdee - kcalIn);
+            // Visual Updates
+            document.getElementById('kcal-eaten').innerText = Math.round(kcalIn).toLocaleString();
+            document.getElementById('display-tea').innerText = Math.round(tea).toLocaleString();
             
-            const netDisplay = document.getElementById('net-display');
+            const netResidue = Math.round(tdee - kcalIn);
+            document.getElementById('net-display').innerText = netResidue.toLocaleString();
+            document.getElementById('net-display-header').innerText = netResidue;
+
+            // Header Container Color
             const netContainer = document.getElementById('net-container');
-            netDisplay.innerText = netResidue;
+            netContainer.className = netResidue < 0 ? "bg-red-500 text-white px-3 py-1 rounded-lg shadow-lg" : "bg-green-500 text-white px-3 py-1 rounded-lg shadow-lg";
 
-            if (netResidue < 0) {
-                netContainer.className = "bg-red-500 text-white px-3 py-1 rounded-lg shadow-lg";
-            } else {
-                netContainer.className = "bg-green-500 text-white px-3 py-1 rounded-lg shadow-lg";
-            }
+            // Circle Progress
+            const perc = Math.min(100, (kcalIn / tdee) * 100);
+            document.getElementById('ring-progress').style.strokeDashoffset = 440 - (440 * perc / 100);
+            document.getElementById('ring-progress').style.stroke = netResidue < 0 ? '#ef4444' : '#10b981';
 
+            // Bars Progress
+            updateBar('carbs', carbsIn, tC);
+            updateBar('pro', proIn, tP);
+            updateBar('fat', fatIn, tG);
+
+            // Log
             const logDiv = document.getElementById('daily-log');
             logDiv.innerHTML = "";
-            dDiet.forEach(d => logDiv.innerHTML += logItem('diet', d.id, 'fa-utensils', 'text-green-500', d.name, `${d.grams}g`, `${d.kcal}kcal`));
+            dDiet.forEach(d => logDiv.innerHTML += logItem('diet', d.id, 'fa-utensils', 'text-green-500', d.name, `${d.grams}g`, `${Math.round(d.kcal)}kcal`));
             dGym.forEach(g => logDiv.innerHTML += logItem('gym', g.id, 'fa-dumbbell', 'text-red-500', g.name, `${g.sets}x${g.reps} @ ${g.weight}kg`, `+${g.kcal} TEA`));
             dCardio.forEach(c => logDiv.innerHTML += logItem('cardio', c.id, 'fa-heartbeat', 'text-blue-500', c.name, c.detail, `+${c.kcal} TEA`));
+        }
+
+        function updateBar(id, current, target) {
+            const p = Math.min(100, (current / target) * 100);
+            document.getElementById(`bar-${id}`).style.width = p + '%';
+            document.getElementById(`val-${id}`).innerText = Math.round(current);
         }
 
         function getSelectedDate() { return new Date(document.getElementById('global-date').value).toLocaleDateString(); }
@@ -191,23 +264,27 @@
         function saveUserParams() {
             const params = {
                 tdee: parseFloat(document.getElementById('user-tdee').value),
-                bmr: parseFloat(document.getElementById('user-bmr').value)
+                c: parseFloat(document.getElementById('target-carbs').value),
+                p: parseFloat(document.getElementById('target-pro').value),
+                g: parseFloat(document.getElementById('target-fat').value)
             };
-            localStorage.setItem('user_params_v11', JSON.stringify(params));
+            localStorage.setItem('user_params_v12', JSON.stringify(params));
             save();
             alert("Parametri salvati!");
         }
 
         function loadLocalParams() {
-            const saved = JSON.parse(localStorage.getItem('user_params_v11'));
+            const saved = JSON.parse(localStorage.getItem('user_params_v12'));
             if(saved) {
                 document.getElementById('user-tdee').value = saved.tdee;
-                document.getElementById('user-bmr').value = saved.bmr;
+                document.getElementById('target-carbs').value = saved.c;
+                document.getElementById('target-pro').value = saved.p;
+                document.getElementById('target-fat').value = saved.g;
             }
         }
 
         function save(cloud = true) {
-            localStorage.setItem('fitness_pro_v11', JSON.stringify(history));
+            localStorage.setItem('fitness_pro_v12', JSON.stringify(history));
             if(cloud) syncToCloud();
             updateUI();
             updateChart();
@@ -233,7 +310,6 @@
             </div>`;
         }
 
-        // --- API & WORKOUT ---
         async function searchOFF() {
             const q = document.getElementById('food-input').value;
             const res = document.getElementById('food-results');
@@ -244,12 +320,16 @@
             res.innerHTML = "";
             data.products.forEach(p => {
                 const kcal = p.nutriments['energy-kcal_100g'] || 0;
+                const c = p.nutriments.carbohydrates_100g || 0;
+                const pr = p.nutriments.proteins_100g || 0;
+                const f = p.nutriments.fat_100g || 0;
                 const div = document.createElement('div');
                 div.className = "p-2 border-b flex justify-between cursor-pointer hover:bg-slate-50 text-[11px]";
                 div.onclick = () => {
-                    const g = prompt("Grammi consumati?", "100");
+                    const g = prompt(`Grammi di ${p.product_name}?`, "100");
                     if(g) {
-                        history.diet.push({ id: Date.now(), date: getSelectedDate(), name: p.product_name, kcal: Math.round((kcal*g)/100), grams: g });
+                        const r = g/100;
+                        history.diet.push({ id: Date.now(), date: getSelectedDate(), name: p.product_name, kcal: kcal*r, carbs: c*r, pro: pr*r, fat: f*r, grams: g });
                         save();
                         res.classList.add('hidden');
                     }
@@ -283,7 +363,6 @@
         function confirmWorkout() {
             const name = document.getElementById('sel-ex-name').innerText;
             const sets = parseInt(document.getElementById('ex-sets').value) || 0;
-            // Calcolo TEA basato su un peso standard (es. 71kg) per semplicità nel diario
             const kcalBurned = Math.round((6 * 3.5 * 71 / 200) * (sets * 3.75));
             history.gym.push({ id: Date.now(), date: getSelectedDate(), name, kcal: kcalBurned, sets, reps: document.getElementById('ex-reps').value, weight: document.getElementById('ex-weight').value });
             save();
@@ -315,7 +394,6 @@
             document.getElementById('cardio-form').classList.add('hidden');
         }
 
-        // --- CLOUD ---
         async function syncToCloud() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user) return;
@@ -326,18 +404,6 @@
                 tdee: tdee
             });
             if (!error) document.getElementById('sync-status').innerText = "Cloud OK ✓";
-        }
-
-        async function handleLogin() {
-            const email = document.getElementById('supa-email').value;
-            const password = document.getElementById('supa-pass').value;
-            await _supabase.auth.signInWithPassword({ email, password });
-            location.reload();
-        }
-
-        async function handleLogout() {
-            await _supabase.auth.signOut();
-            location.reload();
         }
 
         function updateChart() {
@@ -367,9 +433,6 @@
             loadLocalParams();
             const { data: { user } } = await _supabase.auth.getUser();
             if (user) {
-                document.getElementById('auth-controls').classList.add('hidden');
-                document.getElementById('logged-controls').classList.remove('hidden');
-                document.getElementById('display-email').innerText = user.email;
                 document.getElementById('sync-status').innerText = "Online";
                 let { data } = await _supabase.from('profili utente').select('*').eq('ID utente', user.id).single();
                 if (data && data.macro_json) history = JSON.parse(data.macro_json);
