@@ -2,229 +2,311 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI COACH PRO - Cloud</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fitness Pro - Supabase Cloud Sync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --card-bg: #1e293b;
-            --neon-blue: #38bdf8;
-            --neon-purple: #a855f7;
-            --text-main: #f8fafc;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            font-family: 'Inter', -apple-system, sans-serif;
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .container { width: 100%; max-width: 500px; }
-
-        .card-neon {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-        }
-
-        h1, h2, h3 { color: var(--neon-blue); text-transform: uppercase; letter-spacing: 1px; }
-
-        .input-modern {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: white;
-            border-radius: 8px;
-            box-sizing: border-box;
-        }
-
-        .btn-neon {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(56, 189, 248, 0.3);
-        }
-
-        .hidden { display: none; }
-        .status-badge { font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; background: #334155; }
-        canvas { margin-top: 20px; }
-    </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900 min-h-screen pb-24 font-sans text-sm">
 
-<div class="container">
-    <header style="text-align: center; margin-bottom: 20px;">
-        <h1><i class="fas fa-bolt"></i> AI COACH PRO</h1>
-        <div id="connection-status" class="status-badge">Offline</div>
-    </header>
-
-    <div class="card-neon">
-        <h3><i class="fas fa-cloud"></i> Cloud Sync</h3>
-        
-        <div id="auth-form">
-            <input type="email" id="supa-email" placeholder="La tua Email" class="input-modern">
-            <input type="password" id="supa-pass" placeholder="Password" class="input-modern">
-            <div style="display:flex; gap:10px;">
-                <button onclick="handleLogin()" class="btn-neon" style="flex:1">Accedi</button>
-                <button onclick="handleSignup()" class="btn-neon" style="flex:1; background:var(--neon-purple);">Registrati</button>
+    <header id="main-header" class="bg-indigo-700 text-white p-4 sticky top-0 z-50 shadow-md transition-colors duration-500">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold italic tracking-tighter uppercase">AI COACH PRO</h1>
+                <input type="date" id="global-date" onchange="updateUI()" class="bg-white/20 text-white text-[10px] border-none rounded px-2 py-1 outline-none mt-1">
+            </div>
+            <div class="text-right">
+                <p id="sync-status" class="text-[9px] uppercase opacity-60 mb-1">Cloud Offline</p>
+                <p id="net-display" class="font-bold text-xl leading-none">0</p>
             </div>
         </div>
+    </header>
 
-        <div id="user-logged" class="hidden">
-            <p>Sincronizzato come: <strong id="display-email"></strong></p>
-            <button onclick="handleLogout()" class="btn-neon" style="background:#ef4444; padding: 8px;">Disconnetti</button>
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
+
+        <section class="bg-white rounded-2xl shadow-sm p-4 border border-indigo-100">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                    <i class="fas fa-cloud text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-xs uppercase">Cloud Sync (Supabase)</h3>
+                    <p id="user-info" class="text-[10px] text-slate-500">Accedi per sincronizzare i dati su tutti i dispositivi</p>
+                </div>
+            </div>
+            
+            <div id="auth-controls">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                    <input type="email" id="supa-email" placeholder="Email" class="p-2 border rounded-xl text-xs outline-none">
+                    <input type="password" id="supa-pass" placeholder="Password" class="p-2 border rounded-xl text-xs outline-none">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="handleLogin()" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">Accedi</button>
+                    <button onclick="handleSignup()" class="flex-1 bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold hover:bg-slate-300 transition">Registrati</button>
+                </div>
+            </div>
+
+            <div id="logged-controls" class="hidden flex justify-between items-center">
+                <p class="text-xs font-medium">Connesso come: <span id="display-email" class="text-indigo-600"></span></p>
+                <button onclick="handleLogout()" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[10px] font-bold uppercase">Esci</button>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="text-center border-r border-slate-100 last:border-0">
+                    <p class="text-slate-400 text-[10px] uppercase">Peso</p>
+                    <p class="font-bold text-base">71 kg</p>
+                </div>
+                <div class="text-center border-r border-slate-100 last:border-0">
+                    <p class="text-slate-400 text-[10px] uppercase">TDEE Target</p>
+                    <p class="font-bold text-base text-indigo-600">2747.6</p>
+                </div>
+                <div class="text-center border-r border-slate-100 last:border-0">
+                    <p class="text-slate-400 text-[10px] uppercase">Età</p>
+                    <p class="font-bold text-base">27</p>
+                </div>
+                <div class="text-center last:border-0">
+                    <p class="text-slate-400 text-[10px] uppercase">BMR</p>
+                    <p class="font-bold text-base text-orange-600">1831.7</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid md:grid-cols-2 gap-4">
+            <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+                <h2 class="text-lg font-bold text-green-600 mb-4"><i class="fas fa-utensils mr-2"></i>Cerca Cibo</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="food-input" placeholder="Cerca prodotto..." class="flex-1 p-3 bg-slate-50 rounded-xl outline-none border">
+                    <button onclick="searchOFF()" class="bg-green-500 text-white px-4 rounded-xl"><i class="fas fa-search"></i></button>
+                </div>
+                <div id="food-results" class="mt-2 hidden max-h-40 overflow-auto"></div>
+            </section>
+
+            <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+                <h2 class="text-lg font-bold text-red-600 mb-4"><i class="fas fa-dumbbell mr-2"></i>Cerca Esercizio</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="exercise-input" placeholder="Cerca esercizio..." class="flex-1 p-3 bg-slate-50 rounded-xl outline-none border">
+                    <button onclick="searchWger()" class="bg-red-500 text-white px-4 rounded-xl"><i class="fas fa-search"></i></button>
+                </div>
+                <div id="exercise-results" class="mt-2 hidden max-h-40 overflow-auto"></div>
+            </section>
         </div>
-    </div>
 
-    <div class="card-neon">
-        <h2><i class="fas fa-chart-line"></i> I tuoi Parametri</h2>
-        <p>Peso attuale: <strong>71 kg</strong> | Altezza: <strong>160 cm</strong></p>
-        <p>TDEE calcolato: <strong>2747.6 kcal</strong></p>
-        <canvas id="mainChart"></canvas>
-    </div>
-
-    <div class="card-neon">
-        <h2><i class="fas fa-calendar-day"></i> Diario Oggi</h2>
-        <div id="daily-log">
-            <p style="color: #94a3b8; font-style: italic;">Caricamento dati dal Cloud...</p>
+        <div id="workout-form" class="hidden bg-indigo-50 p-5 rounded-2xl border border-indigo-100">
+            <p id="sel-ex-name" class="font-bold mb-3 uppercase text-indigo-700"></p>
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <input type="number" id="ex-sets" placeholder="Serie" class="p-2 rounded border">
+                <input type="number" id="ex-reps" placeholder="Reps" class="p-2 rounded border">
+                <input type="number" id="ex-weight" placeholder="Kg" class="p-2 rounded border font-bold">
+            </div>
+            <button onclick="confirmWorkout()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">REGISTRA SESSIONE</button>
         </div>
-        <button onclick="simulaRegistrazione()" class="btn-neon" style="margin-top: 10px;">Aggiungi Attività</button>
-    </div>
-</div>
 
-<script>
-    // 1. CONFIGURAZIONE SUPABASE
-    const SUPABASE_URL = 'https://wcvmxehvpyndedearscs.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjdm14ZWh2cHluZGVkZWFyc2NzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3Njk5NDYsImV4cCI6MjA4NDM0NTk0Nn0.L2i2AB73GSWn-t0zWUk_o0XDfKLXXTtlIRUHFyxS21c';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+            <h2 class="text-xs font-bold mb-4 text-slate-400 uppercase tracking-widest italic">Diario del <span id="display-date"></span></h2>
+            <div id="daily-log" class="space-y-3"></div>
+        </section>
 
-    // 2. GESTIONE AUTENTICAZIONE
-    async function handleSignup() {
-        const email = document.getElementById('supa-email').value;
-        const password = document.getElementById('supa-pass').value;
-        const { error } = await _supabase.auth.signUp({ email, password });
-        if (error) alert(error.message);
-        else alert("Registrazione completata! Controlla la mail per confermare.");
-    }
+    </main>
 
-    async function handleLogin() {
-        const email = document.getElementById('supa-email').value;
-        const password = document.getElementById('supa-pass').value;
-        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-        if (error) alert("Errore login: " + error.message);
-        else {
-            alert("Benvenuto!");
+    <script>
+        // CONFIGURAZIONE SUPABASE
+        const SUPABASE_URL = 'https://wcvmxehvpyndedearscs.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjdm14ZWh2cHluZGVkZWFyc2NzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3Njk5NDYsImV4cCI6MjA4NDM0NTk0Nn0.L2i2AB73GSWn-t0zWUk_o0XDfKLXXTtlIRUHFyxS21c';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let userParams = { weight: 71, tdee: 2747.6, age: 27, bmr: 1831.7 };
+        let history = JSON.parse(localStorage.getItem('fitness_pro_v8')) || { diet: [], gym: [] };
+
+        // --- GESTIONE AUTENTICAZIONE ---
+        async function handleSignup() {
+            const email = document.getElementById('supa-email').value;
+            const password = document.getElementById('supa-pass').value;
+            const { error } = await _supabase.auth.signUp({ email, password });
+            if (error) alert("Errore: " + error.message);
+            else alert("Registrazione inviata! Controlla la mail per confermare.");
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('supa-email').value;
+            const password = document.getElementById('supa-pass').value;
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+            if (error) alert("Errore login: " + error.message);
+            else location.reload();
+        }
+
+        async function handleLogout() {
+            await _supabase.auth.signOut();
             location.reload();
         }
-    }
 
-    async function handleLogout() {
-        await _supabase.auth.signOut();
-        location.reload();
-    }
+        // --- SINCRONIZZAZIONE DATI ---
+        async function syncToCloud() {
+            const { data: { user } } = await _supabase.auth.getUser();
+            if (!user) return;
 
-    // 3. SINCRONIZZAZIONE DATI (Dieta, Pesi, Cardio)
-    async function salvaSuCloud() {
-        const { data: { user } } = await _supabase.auth.getUser();
-        if (!user) return;
+            const { error } = await _supabase
+                .from('profili utente')
+                .upsert({ 
+                    "ID utente": user.id, 
+                    macro_json: JSON.stringify(history), 
+                    tdee: userParams.tdee,
+                    peso: userParams.weight,
+                    altezza: 160,
+                    eta: userParams.age
+                });
 
-        const datiApp = {
-            dieta: localStorage.getItem('dieta') || "",
-            pesi: localStorage.getItem('pesi') || "",
-            cardio: localStorage.getItem('cardio') || "",
-            ultima_modifica: new Date().toISOString()
-        };
+            if (error) console.error("Errore Sync Cloud:", error.message);
+            else document.getElementById('sync-status').innerText = "Cloud Sincronizzato ✓";
+        }
 
-        const { error } = await _supabase
-            .from('profili utente')
-            .upsert({ 
-                "ID utente": user.id, 
-                macro_json: JSON.stringify(datiApp), 
-                tdee: 2747.6,
-                peso: 71,
-                altezza: 160,
-                eta: 27
+        async function loadFromCloud() {
+            const { data: { user } } = await _supabase.auth.getUser();
+            if (!user) return;
+
+            document.getElementById('auth-controls').classList.add('hidden');
+            document.getElementById('logged-controls').classList.remove('hidden');
+            document.getElementById('display-email').innerText = user.email;
+            document.getElementById('sync-status').innerText = "Online (Supabase)";
+
+            let { data, error } = await _supabase
+                .from('profili utente')
+                .select('macro_json')
+                .eq('ID utente', user.id)
+                .single();
+
+            if (data && data.macro_json) {
+                const cloudHistory = JSON.parse(data.macro_json);
+                // Uniamo i dati locali con quelli cloud (priorità cloud se più recenti)
+                history = cloudHistory;
+                localStorage.setItem('fitness_pro_v8', JSON.stringify(history));
+                updateUI();
+            }
+        }
+
+        // --- LOGICA DIARIO (Open Food Facts & Wger) ---
+        async function searchOFF() {
+            const q = document.getElementById('food-input').value;
+            const res = document.getElementById('food-results');
+            if(q.length < 3) return;
+            res.innerHTML = "Cercando..."; res.classList.remove('hidden');
+            try {
+                const response = await fetch(`https://it.openfoodfacts.org/cgi/search.pl?search_terms=${q}&json=1&page_size=5`);
+                const data = await response.json();
+                res.innerHTML = "";
+                data.products.forEach(p => {
+                    const kcal = p.nutriments['energy-kcal_100g'] || 0;
+                    const div = document.createElement('div');
+                    div.className = "p-2 bg-slate-50 mb-1 rounded flex justify-between cursor-pointer hover:bg-green-50 text-[11px]";
+                    div.onclick = () => {
+                        const g = prompt("Grammi?", "100");
+                        if(g) {
+                            history.diet.push({ 
+                                date: new Date(document.getElementById('global-date').value).toLocaleDateString(), 
+                                name: p.product_name, 
+                                kcal: Math.round((kcal*g)/100), 
+                                grams: g 
+                            });
+                            save();
+                            res.classList.add('hidden');
+                        }
+                    };
+                    div.innerHTML = `<span>${p.product_name}</span><b>${kcal}kcal/100g</b>`;
+                    res.appendChild(div);
+                });
+            } catch(e) { res.innerHTML = "Errore ricerca."; }
+        }
+
+        async function searchWger() {
+            const q = document.getElementById('exercise-input').value;
+            const res = document.getElementById('exercise-results');
+            if(q.length < 3) return;
+            res.innerHTML = "Cercando..."; res.classList.remove('hidden');
+            try {
+                const response = await fetch(`https://wger.de/api/v2/exercise/search/?term=${q}`);
+                const data = await response.json();
+                res.innerHTML = "";
+                data.suggestions.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = "p-2 bg-slate-50 mb-1 rounded text-[11px] cursor-pointer hover:bg-red-50";
+                    div.onclick = () => {
+                        document.getElementById('sel-ex-name').innerText = s.value;
+                        document.getElementById('workout-form').classList.remove('hidden');
+                        res.classList.add('hidden');
+                    };
+                    div.innerText = s.value;
+                    res.appendChild(div);
+                });
+            } catch(e) { res.innerHTML = "Errore ricerca."; }
+        }
+
+        function confirmWorkout() {
+            const name = document.getElementById('sel-ex-name').innerText;
+            const kcalBurned = Math.round((6 * 3.5 * userParams.weight / 200) * 45); // Stima media
+            history.gym.push({
+                date: new Date(document.getElementById('global-date').value).toLocaleDateString(),
+                name, kcal: kcalBurned,
+                sets: document.getElementById('ex-sets').value,
+                reps: document.getElementById('ex-reps').value,
+                weight: document.getElementById('ex-weight').value
+            });
+            save();
+            document.getElementById('workout-form').classList.add('hidden');
+        }
+
+        function save() {
+            localStorage.setItem('fitness_pro_v8', JSON.stringify(history));
+            syncToCloud();
+            updateUI();
+        }
+
+        function updateUI() {
+            const selDateInput = document.getElementById('global-date').value;
+            const selDate = new Date(selDateInput).toLocaleDateString();
+            document.getElementById('display-date').innerText = selDate;
+            
+            const dayDiet = history.diet.filter(d => d.date === selDate);
+            const dayGym = history.gym.filter(g => g.date === selDate);
+            
+            const totalIn = dayDiet.reduce((a,b)=>a+b.kcal, 0);
+            const totalOut = dayGym.reduce((a,b)=>a+b.kcal, 0);
+            const net = Math.round(userParams.tdee - totalIn + totalOut);
+            
+            document.getElementById('net-display').innerText = net;
+            if(net < 0) document.getElementById('net-display').className = "font-bold text-xl leading-none text-red-400";
+            else document.getElementById('net-display').className = "font-bold text-xl leading-none text-white";
+
+            const logDiv = document.getElementById('daily-log');
+            logDiv.innerHTML = "";
+            
+            if(dayDiet.length === 0 && dayGym.length === 0) {
+                logDiv.innerHTML = "<p class='text-center text-slate-400 py-4 italic'>Nessuna attività registrata per oggi.</p>";
+            }
+
+            dayDiet.forEach(d => {
+                logDiv.innerHTML += `<div class="p-3 bg-white rounded-xl border-l-4 border-green-500 shadow-sm flex justify-between items-center">
+                    <div><b class="text-xs uppercase">${d.name}</b><br><span class="text-slate-500 text-[10px]">${d.grams}g</span></div>
+                    <b class="text-green-600">${d.kcal}kcal</b>
+                </div>`;
             });
 
-        if (error) console.error("Errore Cloud:", error.message);
-        else document.getElementById('connection-status').innerText = "Sincronizzato ✓";
-    }
-
-    async function caricaDaCloud() {
-        const { data: { user } } = await _supabase.auth.getUser();
-        if (!user) return;
-
-        // UI Update
-        document.getElementById('auth-form').classList.add('hidden');
-        document.getElementById('user-logged').classList.remove('hidden');
-        document.getElementById('display-email').innerText = user.email;
-        document.getElementById('connection-status').innerText = "Online";
-
-        let { data, error } = await _supabase
-            .from('profili utente')
-            .select('macro_json')
-            .eq('ID utente', user.id)
-            .single();
-
-        if (data && data.macro_json) {
-            const cloudData = JSON.parse(data.macro_json);
-            if(cloudData.dieta) localStorage.setItem('dieta', cloudData.dieta);
-            if(cloudData.pesi) localStorage.setItem('pesi', cloudData.pesi);
-            if(cloudData.cardio) localStorage.setItem('cardio', cloudData.cardio);
-            aggiornaDiarioUI();
+            dayGym.forEach(g => {
+                logDiv.innerHTML += `<div class="p-3 bg-white rounded-xl border-l-4 border-red-500 shadow-sm flex justify-between items-center">
+                    <div><b class="text-xs uppercase">💪 ${g.name}</b><br><span class="text-slate-500 text-[10px]">${g.sets}x${g.reps} @ ${g.weight}kg</span></div>
+                    <b class="text-red-600">-${g.kcal}kcal</b>
+                </div>`;
+            });
         }
-    }
 
-    function aggiornaDiarioUI() {
-        document.getElementById('daily-log').innerHTML = "<p>Dati caricati dal Cloud correttamente!</p>";
-    }
-
-    // Inizializzazione Chart.js (Esempio)
-    const ctx = document.getElementById('mainChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'],
-            datasets: [{
-                label: 'Peso (kg)',
-                data: [71.5, 71.2, 71.0, 71.1, 70.9, 71.0, 71.0],
-                borderColor: '#38bdf8',
-                tension: 0.4
-            }]
-        },
-        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
-    });
-
-    window.onload = caricaDaCloud;
-
-    // Ogni volta che si salva qualcosa localmente, l'app lo manda al cloud
-    function simulaRegistrazione() {
-        localStorage.setItem('dieta', 'Pasto registrato');
-        salvaSuCloud();
-        alert("Attività salvata e sincronizzata!");
-    }
-</script>
-
+        // Inizializzazione
+        window.onload = () => {
+            document.getElementById('global-date').valueAsDate = new Date();
+            loadFromCloud();
+            updateUI();
+        }
+    </script>
 </body>
 </html>
