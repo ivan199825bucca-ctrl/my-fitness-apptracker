@@ -19,8 +19,10 @@
             </div>
             <div class="text-right">
                 <p id="sync-status" class="text-[9px] uppercase opacity-60 mb-1">Cloud Offline</p>
-                <p id="net-display" class="font-bold text-xl leading-none">0</p>
-                <p class="text-[8px] uppercase">Calorie Residue</p>
+                <div id="net-container" class="bg-white/10 px-3 py-1 rounded-lg transition-colors duration-300">
+                    <p id="net-display" class="font-bold text-xl leading-none">0</p>
+                    <p class="text-[8px] uppercase">Calorie Residue</p>
+                </div>
             </div>
         </div>
     </header>
@@ -49,30 +51,31 @@
         </section>
 
         <section class="bg-white rounded-2xl shadow-sm p-5 border border-indigo-200">
-            <h2 class="text-xs font-bold mb-4 text-indigo-600 uppercase tracking-widest"><i class="fas fa-user-edit mr-2"></i>Parametri Fisici (Referto BIA)</h2>
+            <h2 class="text-xs font-bold mb-4 text-indigo-600 uppercase tracking-widest"><i class="fas fa-calculator mr-2"></i>Calcolo Metabolico Real-Time</h2>
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
                 <div>
                     <label class="text-[9px] uppercase font-bold text-slate-400">Età</label>
-                    <input type="number" id="user-age" value="27" class="w-full p-2 bg-slate-50 border rounded-lg outline-none">
+                    <input type="number" id="user-age" value="27" oninput="autoCalculate()" class="w-full p-2 bg-slate-50 border rounded-lg outline-none focus:border-indigo-400">
                 </div>
                 <div>
                     <label class="text-[9px] uppercase font-bold text-slate-400">Peso (kg)</label>
-                    <input type="number" id="user-weight" value="71.1" step="0.1" class="w-full p-2 bg-slate-50 border rounded-lg outline-none">
+                    <input type="number" id="user-weight" value="71" step="0.1" oninput="autoCalculate()" class="w-full p-2 bg-slate-50 border rounded-lg outline-none focus:border-indigo-400 font-bold">
                 </div>
                 <div>
                     <label class="text-[9px] uppercase font-bold text-slate-400">Altezza (cm)</label>
-                    <input type="number" id="user-height" value="160" class="w-full p-2 bg-slate-50 border rounded-lg outline-none">
+                    <input type="number" id="user-height" value="160" oninput="autoCalculate()" class="w-full p-2 bg-slate-50 border rounded-lg outline-none focus:border-indigo-400">
                 </div>
                 <div>
-                    <label class="text-[9px] uppercase font-bold text-slate-400">BMR (kcal)</label>
-                    <input type="number" id="user-bmr" value="1831.7" class="w-full p-2 bg-slate-50 border rounded-lg outline-none text-orange-600 font-bold">
+                    <label class="text-[9px] uppercase font-bold text-slate-400 italic">BMR (Stima)</label>
+                    <div id="user-bmr-display" class="w-full p-2 bg-orange-50 text-orange-600 font-bold rounded-lg border border-orange-100">1831.7</div>
                 </div>
                 <div>
                     <label class="text-[9px] uppercase font-bold text-slate-400">TDEE Target</label>
-                    <input type="number" id="user-tdee" value="2747.6" class="w-full p-2 bg-slate-50 border rounded-lg outline-none text-indigo-600 font-bold">
+                    <input type="number" id="user-tdee" value="2747.6" class="w-full p-2 bg-indigo-50 border border-indigo-100 rounded-lg outline-none text-indigo-600 font-bold">
                 </div>
             </div>
-            <button onclick="saveUserParams()" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold uppercase hover:bg-indigo-700 transition shadow-md">Aggiorna Obiettivi</button>
+            <p class="text-[9px] text-slate-400 mb-4 italic text-center">Il TDEE viene ricalcolato automaticamente usando la formula Mifflin-St Jeor (Activity Factor 1.5). Puoi sovrascriverlo manualmente.</p>
+            <button onclick="saveUserParams()" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold uppercase hover:bg-indigo-700 transition shadow-md">Salva Parametri & Sincronizza Cloud</button>
         </section>
 
         <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
@@ -112,8 +115,8 @@
         <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
             <h2 class="text-lg font-bold text-blue-600 mb-4 uppercase"><i class="fas fa-heartbeat mr-2"></i>Cardio</h2>
             <div class="grid grid-cols-2 gap-3 mb-4">
-                <button onclick="showCardioForm('walk')" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold border border-blue-100 text-xs">CAMMINATA</button>
-                <button onclick="showCardioForm('bike')" class="bg-indigo-50 text-indigo-600 py-3 rounded-xl font-bold border border-indigo-100 text-xs">CYCLETTE</button>
+                <button onclick="showCardioForm('walk')" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold border border-blue-100 text-xs hover:bg-blue-100 transition">CAMMINATA</button>
+                <button onclick="showCardioForm('bike')" class="bg-indigo-50 text-indigo-600 py-3 rounded-xl font-bold border border-indigo-100 text-xs hover:bg-indigo-100 transition">CYCLETTE</button>
             </div>
             <div id="cardio-form" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div id="walk-inputs" class="hidden grid grid-cols-3 gap-2">
@@ -126,7 +129,7 @@
                     <input type="number" id="bike-min" placeholder="Min" class="p-2 border rounded">
                     <input type="number" id="bike-rpm" placeholder="RPM" class="p-2 border rounded">
                 </div>
-                <button onclick="confirmCardio()" class="w-full mt-3 bg-blue-600 text-white py-2 rounded-xl font-bold">REGISTRA</button>
+                <button onclick="confirmCardio()" class="w-full mt-3 bg-blue-600 text-white py-2 rounded-xl font-bold hover:bg-blue-700 transition">REGISTRA ATTIVITÀ</button>
             </div>
         </section>
 
@@ -155,26 +158,41 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjdm14ZWh2cHluZGVkZWFyc2NzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3Njk5NDYsImV4cCI6MjA4NDM0NTk0Nn0.L2i2AB73GSWn-t0zWUk_o0XDfKLXXTtlIRUHFyxS21c';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Funzione per ottenere dinamicamente i valori dai campi input
-        function getCurrentParams() {
-            return {
-                age: parseFloat(document.getElementById('user-age').value) || 27,
-                weight: parseFloat(document.getElementById('user-weight').value) || 71.1,
-                height: parseFloat(document.getElementById('user-height').value) || 160,
-                bmr: parseFloat(document.getElementById('user-bmr').value) || 1831.7,
-                tdee: parseFloat(document.getElementById('user-tdee').value) || 2747.6
-            };
-        }
-
         let history = JSON.parse(localStorage.getItem('fitness_pro_v11')) || { diet: [], gym: [], cardio: [] };
         let myChart, activeCardioType = '';
 
-        // --- GESTIONE PARAMETRI ---
+        // --- FUNZIONI DI CALCOLO AUTOMATICO ---
+        function autoCalculate() {
+            const age = parseFloat(document.getElementById('user-age').value) || 27;
+            const weight = parseFloat(document.getElementById('user-weight').value) || 71;
+            const height = parseFloat(document.getElementById('user-height').value) || 160;
+
+            // Formula Mifflin-St Jeor (Donna: -161 alla fine, Uomo: +5)
+            // Usiamo +5 basandoci sui tuoi dati calcolati ieri
+            const bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+            const tdee = bmr * 1.5; // Activity Factor medio
+
+            document.getElementById('user-bmr-display').innerText = bmr.toFixed(1);
+            document.getElementById('user-tdee').value = tdee.toFixed(1);
+            
+            updateUI(); // Aggiorna subito le calorie residue in alto
+        }
+
+        function getCurrentParams() {
+            return {
+                age: parseFloat(document.getElementById('user-age').value),
+                weight: parseFloat(document.getElementById('user-weight').value),
+                height: parseFloat(document.getElementById('user-height').value),
+                tdee: parseFloat(document.getElementById('user-tdee').value)
+            };
+        }
+
+        // --- GESTIONE DATI ---
         function saveUserParams() {
             const params = getCurrentParams();
             localStorage.setItem('user_params_manual', JSON.stringify(params));
-            save(); // Salva e sincronizza tutto
-            alert("Obiettivi aggiornati con i nuovi dati BIA!");
+            save(); 
+            alert("Parametri aggiornati e sincronizzati!");
         }
 
         function loadLocalParams() {
@@ -183,18 +201,18 @@
                 document.getElementById('user-age').value = saved.age;
                 document.getElementById('user-weight').value = saved.weight;
                 document.getElementById('user-height').value = saved.height;
-                document.getElementById('user-bmr').value = saved.bmr;
                 document.getElementById('user-tdee').value = saved.tdee;
+                autoCalculate(); // Rinfresca i display
             }
         }
 
-        // --- AUTH ---
+        // --- AUTH & CLOUD ---
         async function handleSignup() {
             const email = document.getElementById('supa-email').value;
             const password = document.getElementById('supa-pass').value;
             const { error } = await _supabase.auth.signUp({ email, password });
             if (error) alert(error.message);
-            else alert("Controlla l'email per confermare!");
+            else alert("Controlla l'email!");
         }
 
         async function handleLogin() {
@@ -210,13 +228,11 @@
             location.reload();
         }
 
-        // --- CLOUD SYNC ---
         async function syncToCloud() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user) return;
-
             const params = getCurrentParams();
-            const { error } = await _supabase.from('profili utente').upsert({ 
+            await _supabase.from('profili utente').upsert({ 
                 "ID utente": user.id, 
                 macro_json: JSON.stringify(history), 
                 tdee: params.tdee, 
@@ -224,32 +240,28 @@
                 eta: params.age,
                 altezza: params.height
             });
-
-            if (!error) document.getElementById('sync-status').innerText = "Sincronizzato ✓";
+            document.getElementById('sync-status').innerText = "Sincronizzato ✓";
         }
 
         async function loadFromCloud() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user) return;
-
             document.getElementById('auth-controls').classList.add('hidden');
             document.getElementById('logged-controls').classList.remove('hidden');
             document.getElementById('display-email').innerText = user.email;
-            document.getElementById('sync-status').innerText = "Online";
-
             let { data } = await _supabase.from('profili utente').select('*').eq('ID utente', user.id).single();
             if (data) {
                 if(data.macro_json) history = JSON.parse(data.macro_json);
-                // Carichiamo anche i parametri fisici dal cloud se presenti
                 document.getElementById('user-age').value = data.eta || 27;
-                document.getElementById('user-weight').value = data.peso || 71.1;
+                document.getElementById('user-weight').value = data.peso || 71;
                 document.getElementById('user-height').value = data.altezza || 160;
                 document.getElementById('user-tdee').value = data.tdee || 2747.6;
+                autoCalculate();
                 save(false);
             }
         }
 
-        // --- RICERCA API ---
+        // --- LOGICA DIARIO ---
         async function searchOFF() {
             const q = document.getElementById('food-input').value;
             const res = document.getElementById('food-results');
@@ -270,7 +282,7 @@
                         res.classList.add('hidden');
                     }
                 };
-                div.innerHTML = `<span>${p.product_name}</span><b>${kcal} kcal</b>`;
+                div.innerHTML = `<span>${p.product_name}</span><b>${kcal} kcal/100g</b>`;
                 res.appendChild(div);
             });
         }
@@ -296,7 +308,6 @@
             });
         }
 
-        // --- LOGICA SALVATAGGIO ---
         function confirmWorkout() {
             const params = getCurrentParams();
             const name = document.getElementById('sel-ex-name').innerText;
@@ -362,9 +373,20 @@
             const tIn = dDiet.reduce((a,b)=>a+b.kcal, 0);
             const tOut = dGym.reduce((a,b)=>a+b.kcal, 0) + dCardio.reduce((a,b)=>a+b.kcal, 0);
             
-            // Calcolo basato sul TDEE manuale inserito
             const net = Math.round(params.tdee - tIn + tOut);
-            document.getElementById('net-display').innerText = net;
+            const netDisplay = document.getElementById('net-display');
+            const netContainer = document.getElementById('net-container');
+
+            netDisplay.innerText = net;
+
+            // Feedback colori: Verde se ok, Rosso se sfori
+            if (net < 0) {
+                netContainer.classList.add('bg-red-500/40');
+                netContainer.classList.remove('bg-white/10');
+            } else {
+                netContainer.classList.add('bg-green-500/40');
+                netContainer.classList.remove('bg-white/10', 'bg-red-500/40');
+            }
 
             const logDiv = document.getElementById('daily-log');
             logDiv.innerHTML = "";
@@ -374,7 +396,7 @@
         }
 
         function logItem(type, id, icon, color, title, sub, val) {
-            return `<div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+            return `<div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center animate-in fade-in duration-300">
                 <div class="flex items-center gap-3">
                     <i class="fas ${icon} ${color} text-lg"></i>
                     <div><p class="font-bold text-xs uppercase">${title}</p><p class="text-[10px] text-slate-400">${sub}</p></div>
@@ -404,15 +426,16 @@
             if(myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'line',
-                data: { labels, datasets: [{ label: 'Calorie Nette', data: dataNet, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 }] },
+                data: { labels, datasets: [{ label: 'Bilancio Calorico', data: dataNet, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
 
         window.onload = () => {
             document.getElementById('global-date').valueAsDate = new Date();
-            loadLocalParams(); // Carica prima i dati locali
+            loadLocalParams(); 
             loadFromCloud().then(() => {
+                autoCalculate();
                 updateUI();
                 updateChart();
             });
