@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI COACH PRO - Cloud & BIA</title>
+    <title>AI COACH PRO - Cloud & Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -27,8 +27,29 @@
 
     <main class="max-w-4xl mx-auto p-4 space-y-6">
 
+        <section class="bg-white rounded-2xl shadow-sm p-4 border border-indigo-100">
+            <div id="auth-controls">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i class="fas fa-cloud text-lg"></i></div>
+                    <h3 class="font-bold text-xs uppercase">Cloud Sync (Supabase)</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                    <input type="email" id="supa-email" placeholder="Email" class="p-2 border rounded-xl text-xs outline-none">
+                    <input type="password" id="supa-pass" placeholder="Password" class="p-2 border rounded-xl text-xs outline-none">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="handleLogin()" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold">Accedi</button>
+                    <button onclick="handleSignup()" class="flex-1 bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold">Registrati</button>
+                </div>
+            </div>
+            <div id="logged-controls" class="hidden flex justify-between items-center">
+                <p class="text-xs font-medium">Sincronizzato: <span id="display-email" class="text-indigo-600"></span></p>
+                <button onclick="handleLogout()" class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[10px] font-bold uppercase">Esci</button>
+            </div>
+        </section>
+
         <section class="bg-white rounded-2xl shadow-sm p-5 border border-indigo-200">
-            <h2 class="text-xs font-bold mb-4 text-indigo-600 uppercase tracking-widest"><i class="fas fa-user-edit mr-2"></i>Parametri Personali (BIA)</h2>
+            <h2 class="text-xs font-bold mb-4 text-indigo-600 uppercase tracking-widest"><i class="fas fa-user-edit mr-2"></i>Parametri Fisici (Referto BIA)</h2>
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
                 <div>
                     <label class="text-[9px] uppercase font-bold text-slate-400">Età</label>
@@ -51,30 +72,21 @@
                     <input type="number" id="user-tdee" value="2747.6" class="w-full p-2 bg-slate-50 border rounded-lg outline-none text-indigo-600 font-bold">
                 </div>
             </div>
-            <button onclick="saveUserParams()" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold uppercase hover:bg-indigo-700 transition">Aggiorna Target & Cloud</button>
-        </section>
-
-        <section class="bg-slate-100 rounded-2xl p-4 flex justify-between items-center border border-slate-200">
-            <div id="auth-controls" class="flex gap-2 w-full">
-                <input type="email" id="supa-email" placeholder="Email" class="flex-1 p-2 rounded-lg text-xs border outline-none">
-                <input type="password" id="supa-pass" placeholder="Password" class="flex-1 p-2 rounded-lg text-xs border outline-none">
-                <button onclick="handleLogin()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Login</button>
-            </div>
-            <div id="logged-controls" class="hidden flex justify-between w-full items-center">
-                <p class="text-xs">Account: <span id="display-email" class="font-bold"></span></p>
-                <button onclick="handleLogout()" class="text-red-500 text-[10px] font-bold uppercase">Esci</button>
-            </div>
+            <button onclick="saveUserParams()" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold uppercase hover:bg-indigo-700 transition shadow-md">Aggiorna Obiettivi</button>
         </section>
 
         <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-lg font-bold text-indigo-700 uppercase italic">Andamento</h2>
-                <select id="chart-period" onchange="updateChart()" class="bg-slate-100 text-[10px] font-bold py-1 px-2 rounded-lg outline-none border-none">
+                <select id="chart-period" onchange="updateChart()" class="bg-slate-100 text-[10px] font-bold py-1 px-2 rounded-lg outline-none">
                     <option value="7">Settimanale</option>
                     <option value="30">Mensile</option>
+                    <option value="90">Trimestrale</option>
                 </select>
             </div>
-            <div class="h-48 w-full"><canvas id="fitnessChart"></canvas></div>
+            <div class="h-64 w-full">
+                <canvas id="fitnessChart"></canvas>
+            </div>
         </section>
 
         <div class="grid md:grid-cols-2 gap-4">
@@ -98,6 +110,27 @@
         </div>
 
         <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
+            <h2 class="text-lg font-bold text-blue-600 mb-4 uppercase"><i class="fas fa-heartbeat mr-2"></i>Cardio</h2>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button onclick="showCardioForm('walk')" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold border border-blue-100 text-xs">CAMMINATA</button>
+                <button onclick="showCardioForm('bike')" class="bg-indigo-50 text-indigo-600 py-3 rounded-xl font-bold border border-indigo-100 text-xs">CYCLETTE</button>
+            </div>
+            <div id="cardio-form" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div id="walk-inputs" class="hidden grid grid-cols-3 gap-2">
+                    <input type="number" id="walk-kmh" placeholder="km/h" class="p-2 border rounded">
+                    <input type="number" id="walk-min" placeholder="Min" class="p-2 border rounded">
+                    <input type="number" id="walk-grade" placeholder="P.%" class="p-2 border rounded">
+                </div>
+                <div id="bike-inputs" class="hidden grid grid-cols-3 gap-2">
+                    <input type="number" id="bike-level" placeholder="Liv." class="p-2 border rounded">
+                    <input type="number" id="bike-min" placeholder="Min" class="p-2 border rounded">
+                    <input type="number" id="bike-rpm" placeholder="RPM" class="p-2 border rounded">
+                </div>
+                <button onclick="confirmCardio()" class="w-full mt-3 bg-blue-600 text-white py-2 rounded-xl font-bold">REGISTRA</button>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm p-5 border border-slate-200">
             <h2 class="text-xs font-bold mb-4 text-slate-400 uppercase tracking-widest italic text-center">Diario del <span id="display-date"></span></h2>
             <div id="daily-log" class="space-y-3"></div>
         </section>
@@ -105,15 +138,15 @@
     </main>
 
     <div id="workout-form" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-[100]">
-        <div class="bg-white rounded-3xl p-6 w-full max-sm:max-w-xs">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm">
             <p id="sel-ex-name" class="font-bold mb-4 uppercase text-indigo-700 text-center border-b pb-2"></p>
             <div class="grid grid-cols-3 gap-3 mb-5">
-                <div class="text-center"><label class="text-[10px] text-slate-400">SERIE</label><input type="number" id="ex-sets" class="w-full p-2 bg-slate-100 rounded-lg text-center"></div>
-                <div class="text-center"><label class="text-[10px] text-slate-400">REPS</label><input type="number" id="ex-reps" class="w-full p-2 bg-slate-100 rounded-lg text-center"></div>
-                <div class="text-center"><label class="text-[10px] text-slate-400">KG</label><input type="number" id="ex-weight" class="w-full p-2 bg-slate-100 rounded-lg text-center font-bold"></div>
+                <div class="text-center"><label class="text-[10px] text-slate-400 uppercase">Serie</label><input type="number" id="ex-sets" class="w-full p-2 bg-slate-100 rounded-lg text-center"></div>
+                <div class="text-center"><label class="text-[10px] text-slate-400 uppercase">Reps</label><input type="number" id="ex-reps" class="w-full p-2 bg-slate-100 rounded-lg text-center"></div>
+                <div class="text-center"><label class="text-[10px] text-slate-400 uppercase">Kg</label><input type="number" id="ex-weight" class="w-full p-2 bg-slate-100 rounded-lg text-center font-bold"></div>
             </div>
-            <button onclick="confirmWorkout()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold uppercase">Registra</button>
-            <button onclick="document.getElementById('workout-form').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-xs">Chiudi</button>
+            <button onclick="confirmWorkout()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">SALVA</button>
+            <button onclick="document.getElementById('workout-form').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-xs font-bold uppercase">Annulla</button>
         </div>
     </div>
 
@@ -122,35 +155,53 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indjdm14ZWh2cHluZGVkZWFyc2NzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3Njk5NDYsImV4cCI6MjA4NDM0NTk0Nn0.L2i2AB73GSWn-t0zWUk_o0XDfKLXXTtlIRUHFyxS21c';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let history = JSON.parse(localStorage.getItem('fitness_cloud_v12')) || { diet: [], gym: [] };
-        let myChart;
+        // Funzione per ottenere dinamicamente i valori dai campi input
+        function getCurrentParams() {
+            return {
+                age: parseFloat(document.getElementById('user-age').value) || 27,
+                weight: parseFloat(document.getElementById('user-weight').value) || 71.1,
+                height: parseFloat(document.getElementById('user-height').value) || 160,
+                bmr: parseFloat(document.getElementById('user-bmr').value) || 1831.7,
+                tdee: parseFloat(document.getElementById('user-tdee').value) || 2747.6
+            };
+        }
+
+        let history = JSON.parse(localStorage.getItem('fitness_pro_v11')) || { diet: [], gym: [], cardio: [] };
+        let myChart, activeCardioType = '';
 
         // --- GESTIONE PARAMETRI ---
         function saveUserParams() {
-            const params = {
-                age: document.getElementById('user-age').value,
-                weight: document.getElementById('user-weight').value,
-                height: document.getElementById('user-height').value,
-                bmr: document.getElementById('user-bmr').value,
-                tdee: document.getElementById('user-tdee').value
-            };
-            localStorage.setItem('user_params', JSON.stringify(params));
-            syncToCloud();
-            updateUI();
-            updateChart();
-            alert("Parametri aggiornati!");
+            const params = getCurrentParams();
+            localStorage.setItem('user_params_manual', JSON.stringify(params));
+            save(); // Salva e sincronizza tutto
+            alert("Obiettivi aggiornati con i nuovi dati BIA!");
         }
 
-        function getUserParams() {
-            return JSON.parse(localStorage.getItem('user_params')) || { age: 27, weight: 71.1, height: 160, bmr: 1831.7, tdee: 2747.6 };
+        function loadLocalParams() {
+            const saved = JSON.parse(localStorage.getItem('user_params_manual'));
+            if(saved) {
+                document.getElementById('user-age').value = saved.age;
+                document.getElementById('user-weight').value = saved.weight;
+                document.getElementById('user-height').value = saved.height;
+                document.getElementById('user-bmr').value = saved.bmr;
+                document.getElementById('user-tdee').value = saved.tdee;
+            }
         }
 
-        // --- SUPABASE AUTH ---
+        // --- AUTH ---
+        async function handleSignup() {
+            const email = document.getElementById('supa-email').value;
+            const password = document.getElementById('supa-pass').value;
+            const { error } = await _supabase.auth.signUp({ email, password });
+            if (error) alert(error.message);
+            else alert("Controlla l'email per confermare!");
+        }
+
         async function handleLogin() {
             const email = document.getElementById('supa-email').value;
             const password = document.getElementById('supa-pass').value;
             const { error } = await _supabase.auth.signInWithPassword({ email, password });
-            if (error) alert("Errore: " + error.message);
+            if (error) alert(error.message);
             else location.reload();
         }
 
@@ -159,48 +210,51 @@
             location.reload();
         }
 
+        // --- CLOUD SYNC ---
         async function syncToCloud() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user) return;
-            const params = getUserParams();
+
+            const params = getCurrentParams();
             const { error } = await _supabase.from('profili utente').upsert({ 
                 "ID utente": user.id, 
                 macro_json: JSON.stringify(history), 
-                tdee: params.tdee, peso: params.weight, eta: params.age, altezza: params.height
+                tdee: params.tdee, 
+                peso: params.weight,
+                eta: params.age,
+                altezza: params.height
             });
-            if(!error) document.getElementById('sync-status').innerText = "Online ✓";
+
+            if (!error) document.getElementById('sync-status').innerText = "Sincronizzato ✓";
         }
 
         async function loadFromCloud() {
             const { data: { user } } = await _supabase.auth.getUser();
             if (!user) return;
+
             document.getElementById('auth-controls').classList.add('hidden');
             document.getElementById('logged-controls').classList.remove('hidden');
             document.getElementById('display-email').innerText = user.email;
-            
+            document.getElementById('sync-status').innerText = "Online";
+
             let { data } = await _supabase.from('profili utente').select('*').eq('ID utente', user.id).single();
             if (data) {
                 if(data.macro_json) history = JSON.parse(data.macro_json);
-                const cloudParams = { age: data.eta, weight: data.peso, height: data.altezza, tdee: data.tdee, bmr: 1831.7 };
-                localStorage.setItem('user_params', JSON.stringify(cloudParams));
-                setFields(cloudParams);
-                saveLocal();
+                // Carichiamo anche i parametri fisici dal cloud se presenti
+                document.getElementById('user-age').value = data.eta || 27;
+                document.getElementById('user-weight').value = data.peso || 71.1;
+                document.getElementById('user-height').value = data.altezza || 160;
+                document.getElementById('user-tdee').value = data.tdee || 2747.6;
+                save(false);
             }
         }
 
-        function setFields(p) {
-            document.getElementById('user-age').value = p.age;
-            document.getElementById('user-weight').value = p.weight;
-            document.getElementById('user-height').value = p.height;
-            document.getElementById('user-tdee').value = p.tdee;
-        }
-
-        // --- API SEARCH ---
+        // --- RICERCA API ---
         async function searchOFF() {
             const q = document.getElementById('food-input').value;
             const res = document.getElementById('food-results');
             if(q.length < 3) return;
-            res.innerHTML = "<p class='p-2'>Cerco...</p>"; res.classList.remove('hidden');
+            res.innerHTML = "<p class='p-2 text-xs'>Cerco...</p>"; res.classList.remove('hidden');
             const response = await fetch(`https://it.openfoodfacts.org/cgi/search.pl?search_terms=${q}&json=1&page_size=5`);
             const data = await response.json();
             res.innerHTML = "";
@@ -211,9 +265,8 @@
                 div.onclick = () => {
                     const g = prompt("Grammi?", "100");
                     if(g) {
-                        history.diet.push({ id: Date.now(), date: getSelDate(), name: p.product_name, kcal: Math.round((kcal*g)/100), grams: g });
-                        saveLocal();
-                        syncToCloud();
+                        history.diet.push({ id: Date.now(), date: getSelectedDate(), name: p.product_name, kcal: Math.round((kcal*g)/100), grams: g });
+                        save();
                         res.classList.add('hidden');
                     }
                 };
@@ -226,7 +279,7 @@
             const q = document.getElementById('exercise-input').value;
             const res = document.getElementById('exercise-results');
             if(q.length < 3) return;
-            res.innerHTML = "<p class='p-2'>Cerco...</p>"; res.classList.remove('hidden');
+            res.innerHTML = "<p class='p-2 text-xs'>Cerco...</p>"; res.classList.remove('hidden');
             const response = await fetch(`https://wger.de/api/v2/exercise/search/?term=${q}`);
             const data = await response.json();
             res.innerHTML = "";
@@ -243,76 +296,126 @@
             });
         }
 
+        // --- LOGICA SALVATAGGIO ---
         function confirmWorkout() {
-            const kcalBurned = Math.round((6 * 3.5 * getUserParams().weight / 200) * 15);
-            history.gym.push({
-                id: Date.now(), date: getSelDate(), name: document.getElementById('sel-ex-name').innerText,
-                kcal: kcalBurned, sets: document.getElementById('ex-sets').value, reps: document.getElementById('ex-reps').value, weight: document.getElementById('ex-weight').value
-            });
-            saveLocal(); syncToCloud();
+            const params = getCurrentParams();
+            const name = document.getElementById('sel-ex-name').innerText;
+            const sets = parseInt(document.getElementById('ex-sets').value) || 0;
+            const kcalBurned = Math.round((6 * 3.5 * params.weight / 200) * (sets * 3.75));
+            history.gym.push({ id: Date.now(), date: getSelectedDate(), name, kcal: kcalBurned, sets, reps: document.getElementById('ex-reps').value, weight: document.getElementById('ex-weight').value });
+            save();
             document.getElementById('workout-form').classList.add('hidden');
         }
 
+        function showCardioForm(type) {
+            activeCardioType = type;
+            document.getElementById('cardio-form').classList.remove('hidden');
+            document.getElementById('walk-inputs').classList.toggle('hidden', type !== 'walk');
+            document.getElementById('bike-inputs').classList.toggle('hidden', type !== 'bike');
+        }
+
+        function confirmCardio() {
+            const params = getCurrentParams();
+            let kcal = 0, detail = "", name = "";
+            if(activeCardioType === 'walk') {
+                const speed = parseFloat(document.getElementById('walk-kmh').value), min = parseFloat(document.getElementById('walk-min').value), grade = (parseFloat(document.getElementById('walk-grade').value)||0)/100;
+                const vo2 = (0.1 * ((speed*1000)/60)) + (1.8 * ((speed*1000)/60) * grade) + 3.5;
+                kcal = Math.round((vo2 * params.weight / 200) * min);
+                name = "Camminata"; detail = `${speed}km/h, ${min}min, ${grade*100}% p.`;
+            } else {
+                const level = parseInt(document.getElementById('bike-level').value), min = parseInt(document.getElementById('bike-min').value), rpm = parseInt(document.getElementById('bike-rpm').value);
+                let met = 5.0 + (level * 0.3) + (rpm / 30);
+                kcal = Math.round((met * 3.5 * params.weight / 200) * min);
+                name = "Cyclette"; detail = `Liv.${level}, ${min}min, ${rpm}RPM`;
+            }
+            history.cardio.push({ id: Date.now(), date: getSelectedDate(), name, kcal, detail });
+            save();
+            document.getElementById('cardio-form').classList.add('hidden');
+        }
+
         function deleteItem(type, id) {
-            history[type] = history[type].filter(i => i.id !== id);
-            saveLocal(); syncToCloud();
+            if(confirm("Eliminare questa voce?")) {
+                history[type] = history[type].filter(i => i.id !== id);
+                save();
+            }
         }
 
-        function saveLocal() {
-            localStorage.setItem('fitness_cloud_v12', JSON.stringify(history));
-            updateUI(); updateChart();
+        function save(cloud = true) {
+            localStorage.setItem('fitness_pro_v11', JSON.stringify(history));
+            if(cloud) syncToCloud();
+            updateUI();
+            updateChart();
         }
 
-        // --- UI ---
-        function getSelDate() { return new Date(document.getElementById('global-date').value).toLocaleDateString(); }
+        // --- UI & GRAFICI ---
+        function getSelectedDate() { return new Date(document.getElementById('global-date').value).toLocaleDateString(); }
 
         function updateUI() {
-            const sel = getSelDate();
+            const sel = getSelectedDate();
+            const params = getCurrentParams();
             document.getElementById('display-date').innerText = sel;
-            const params = getUserParams();
+            
             const dDiet = history.diet.filter(d => d.date === sel);
-            const dGym = history.gym.filter(g => g.date === sel);
+            const dGym = (history.gym || []).filter(g => g.date === sel);
+            const dCardio = (history.cardio || []).filter(c => c.date === sel);
+            
             const tIn = dDiet.reduce((a,b)=>a+b.kcal, 0);
-            const tOut = dGym.reduce((a,b)=>a+b.kcal, 0);
-            document.getElementById('net-display').innerText = Math.round(params.tdee - tIn + tOut);
+            const tOut = dGym.reduce((a,b)=>a+b.kcal, 0) + dCardio.reduce((a,b)=>a+b.kcal, 0);
+            
+            // Calcolo basato sul TDEE manuale inserito
+            const net = Math.round(params.tdee - tIn + tOut);
+            document.getElementById('net-display').innerText = net;
 
             const logDiv = document.getElementById('daily-log');
             logDiv.innerHTML = "";
             dDiet.forEach(d => logDiv.innerHTML += logItem('diet', d.id, 'fa-utensils', 'text-green-500', d.name, `${d.grams}g`, `${d.kcal}kcal`));
             dGym.forEach(g => logDiv.innerHTML += logItem('gym', g.id, 'fa-dumbbell', 'text-red-500', g.name, `${g.sets}x${g.reps} @ ${g.weight}kg`, `-${g.kcal}kcal`));
+            dCardio.forEach(c => logDiv.innerHTML += logItem('cardio', c.id, 'fa-heartbeat', 'text-blue-500', c.name, c.detail, `-${c.kcal}kcal`));
         }
 
         function logItem(type, id, icon, color, title, sub, val) {
-            return `<div class="p-3 bg-white rounded-xl border border-slate-100 flex justify-between items-center shadow-sm">
-                <div class="flex items-center gap-3"><i class="fas ${icon} ${color}"></i><div><p class="font-bold text-[11px] uppercase">${title}</p><p class="text-[9px] text-slate-400">${sub}</p></div></div>
-                <div class="flex items-center gap-4"><b class="text-xs ${val.startsWith('-') ? 'text-red-500' : 'text-green-600'}">${val}</b><button onclick="deleteItem('${type}', ${id})" class="text-slate-300 hover:text-red-500 text-[10px]"><i class="fas fa-trash"></i></button></div>
+            return `<div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <i class="fas ${icon} ${color} text-lg"></i>
+                    <div><p class="font-bold text-xs uppercase">${title}</p><p class="text-[10px] text-slate-400">${sub}</p></div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <b class="text-xs ${val.startsWith('-') ? 'text-red-500' : 'text-green-600'}">${val}</b>
+                    <button onclick="deleteItem('${type}', ${id})" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+                </div>
             </div>`;
         }
 
         function updateChart() {
             const days = parseInt(document.getElementById('chart-period').value);
+            const params = getCurrentParams();
             const ctx = document.getElementById('fitnessChart').getContext('2d');
-            const labels = [], dataNet = [], params = getUserParams();
+            const labels = [], dataNet = [];
+            
             for(let i = days - 1; i >= 0; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
                 const ds = d.toLocaleDateString();
                 labels.push(ds.substring(0, 5));
                 const tIn = history.diet.filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0);
-                const tOut = history.gym.filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0);
+                const tOut = (history.gym || []).filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0) + (history.cardio || []).filter(x => x.date === ds).reduce((a,b)=>a+b.kcal, 0);
                 dataNet.push(Math.round(params.tdee - tIn + tOut));
             }
+            
             if(myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'line',
-                data: { labels, datasets: [{ label: 'Netto', data: dataNet, borderColor: '#6366f1', fill: false, tension: 0.3 }] },
+                data: { labels, datasets: [{ label: 'Calorie Nette', data: dataNet, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
 
         window.onload = () => {
             document.getElementById('global-date').valueAsDate = new Date();
-            setFields(getUserParams());
-            loadFromCloud().then(() => { updateUI(); updateChart(); });
+            loadLocalParams(); // Carica prima i dati locali
+            loadFromCloud().then(() => {
+                updateUI();
+                updateChart();
+            });
         };
     </script>
 </body>
